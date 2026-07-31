@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 *.db
+test-plan.md
+test-report.md
