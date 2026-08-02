@@ -1,0 +1,22 @@
+{
+  "name": "refunds-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal refunds review dashboard (React + Express + SQLite)",
+  "type": "module",
+  "scripts": {
+    "setup": "npm install --prefix server && npm install --prefix client && npm run env:init",
+    "env:init": "node scripts/init-env.js",
+    "dev": "concurrently --names \"server,client\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "lint": "npm run lint --prefix server && npm run lint --prefix client",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "smoke": "node scripts/smoke-test.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.3.3"
+  }
+}

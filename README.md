@@ -5,3 +5,4 @@ Collection of prototypes. Each lives in its own top-level folder with its own RE
 | Folder | What it is |
 | --- | --- |
 | [`feature-flag-admin/`](feature-flag-admin/) | Internal feature-flag admin panel: CRUD, audit log, RBAC, %/team targeting (FastAPI + SQLite) |
+| [`refunds-dashboard/`](refunds-dashboard/) | Internal refunds review dashboard: queue, summary metrics, approve/deny flow, audit trail, mocked RBAC (React + Express + SQLite) |
