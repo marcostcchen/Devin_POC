@@ -1,9 +1,16 @@
-import os
+"""SQLite connection handling and schema.
+
+FastAPI can run the two halves of a sync generator dependency on different
+threadpool threads, so connections must not be pinned to their creating thread
+(`check_same_thread=False`). A single process-wide lock serializes request
+handling instead, which is plenty for an internal admin panel.
+"""
+
 import sqlite3
 import threading
 from typing import Iterator
 
-DB_PATH = os.environ.get("FLAGS_DB_PATH", os.path.join(os.path.dirname(os.path.dirname(__file__)), "flags.db"))
+from app.config import DB_PATH
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS flags (
@@ -19,7 +26,8 @@ CREATE TABLE IF NOT EXISTS flags (
 
 CREATE TABLE IF NOT EXISTS audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- deliberately not a foreign key: audit history outlives the flag it describes
+    -- flag_id is deliberately not a foreign key, and flag_name is copied in:
+    -- audit history outlives the flag it describes.
     flag_id INTEGER NOT NULL,
     flag_name TEXT NOT NULL,
     actor TEXT NOT NULL,
@@ -31,21 +39,18 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE INDEX IF NOT EXISTS idx_audit_flag_id ON audit_log(flag_id);
 """
 
-
-# FastAPI runs sync generator dependencies across threadpool threads (the setup and
-# teardown halves can land on different threads), so connections must not be pinned to
-# the creating thread. A single lock serializes request handling instead.
 _lock = threading.Lock()
 
 
 def connect() -> sqlite3.Connection:
+    """Open a row-dict connection to the configured database file."""
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
 def get_conn() -> Iterator[sqlite3.Connection]:
+    """FastAPI dependency yielding a connection; commits on success."""
     with _lock:
         conn = connect()
         try:
@@ -56,6 +61,7 @@ def get_conn() -> Iterator[sqlite3.Connection]:
 
 
 def init_db() -> None:
+    """Create tables and indexes if they do not exist yet."""
     conn = connect()
     try:
         conn.executescript(SCHEMA)

@@ -1,0 +1,134 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1c1f23;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  background: #f6f7f9;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.card {
+  display: block;
+  background: #fff;
+  border: 1px solid #e2e5e9;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #eceef1;
+  vertical-align: top;
+}
+
+th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid #cbd2d9;
+  border-radius: 6px;
+}
+
+button {
+  background: #1f6feb;
+  color: #fff;
+  border-color: #1f6feb;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #fff;
+  color: #1c1f23;
+  border-color: #cbd2d9;
+}
+
+button:disabled,
+input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.on {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.off {
+  background: #f1f3f5;
+  color: #495057;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+}
+
+td .row {
+  margin-top: 0;
+}
+
+.muted {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.error {
+  color: #b42318;
+}
+
+.wide {
+  min-width: 240px;
+}
+
+.narrow {
+  width: 72px;
+}
+
+.narrow-text {
+  width: 110px;
+}
+
+ul.audit {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
