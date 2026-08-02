@@ -126,6 +126,10 @@ def test_overview_lists_every_prototype_without_configuration_problems(console):
     }
     assert overview["problems"] == []
     assert all(app["violations"] == [] for app in overview["apps"])
+    # The console links to this; it is derived, so it is not inside "manifest".
+    assert all(
+        app["base_path"] == f"/apps/{app['manifest']['id']}" for app in overview["apps"]
+    )
 
 
 def test_switching_persona_changes_the_role_reported_per_app(console):

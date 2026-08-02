@@ -74,7 +74,8 @@ function statusPill(status) {
 }
 
 function appCard(app) {
-  const { manifest, status, violations } = app;
+  // `base_path` is derived, so the API sends it beside the manifest, not inside it.
+  const { manifest, status, violations, base_path: basePath } = app;
   const running = status.state === "running";
   const busy = status.state === "starting";
 
@@ -92,7 +93,7 @@ function appCard(app) {
       el("span", { className: "chip", textContent: `data: ${manifest.data.classification}` }),
     ]),
     el("div", { className: "muted" }, [
-      el("span", { textContent: `${manifest.base_path}/ · port ${status.port} · your role here: ` }),
+      el("span", { textContent: `${basePath}/ · port ${status.port} · your role here: ` }),
       el("span", { className: "pill accent", textContent: app.role_for_current_principal }),
     ]),
   );
@@ -117,7 +118,7 @@ function appCard(app) {
     className: "primary",
     textContent: "Open",
     disabled: !running,
-    onclick: () => window.open(`${manifest.base_path}/`, "_blank"),
+    onclick: () => window.open(`${basePath}/`, "_blank"),
   });
   const start = el("button", {
     textContent: busy ? "Starting…" : "Start",
