@@ -1,7 +1,8 @@
-/** One flag: state pill, targeting editor, actions and collapsible history. */
+/** One flag: on/off switch, targeting editor, actions and expandable history. */
 
 import { useCallback, useEffect, useState } from "react";
 import { AuditList } from "./AuditList";
+import { formatTimestamp } from "../format";
 import type { AuditEntry, Flag, FlagUpdate } from "../types";
 
 interface Props {
@@ -55,83 +56,114 @@ export function FlagRow({ flag, isAdmin, onUpdate, onDelete, loadHistory }: Prop
     if (window.confirm(`Delete ${flag.name}?`)) void onDelete(flag.id);
   };
 
+  const dirty =
+    rollout !== String(flag.rollout_percentage) || team !== flag.target_team;
+
   return (
-    <tr>
-      <td>
-        <strong>{flag.name}</strong>
-        {description === null ? (
-          <div className="muted">{flag.description || "no description"}</div>
-        ) : (
+    <>
+      <tr>
+        <td>
+          <div className="flag-name">{flag.name}</div>
+          {description === null ? (
+            <div className="muted">{flag.description || "No description"}</div>
+          ) : (
+            <div className="row mt-xs">
+              <input
+                aria-label={`description for ${flag.name}`}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+              <button onClick={() => void saveDescription()}>Save</button>
+              <button className="secondary" onClick={() => setDescription(null)}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </td>
+
+        <td>
+          <label className="switch" title={isAdmin ? "Toggle flag" : "Viewers cannot toggle"}>
+            <input
+              type="checkbox"
+              aria-label={`toggle ${flag.name}`}
+              checked={flag.enabled}
+              disabled={!isAdmin}
+              onChange={() => void update({ enabled: !flag.enabled })}
+            />
+            <span className="track" />
+            <span className="switch-label">{flag.enabled ? "ON" : "OFF"}</span>
+          </label>
+        </td>
+
+        <td>
+          <div className="rollout">
+            <span className={`bar ${flag.enabled ? "" : "off"}`}>
+              <span style={{ width: `${flag.rollout_percentage}%` }} />
+            </span>
+            <span className="muted">{flag.rollout_percentage}%</span>
+            {flag.target_team && <span className="pill accent">{flag.target_team}</span>}
+          </div>
           <div className="row">
             <input
-              aria-label={`description for ${flag.name}`}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              aria-label={`rollout percentage for ${flag.name}`}
+              type="number"
+              min={0}
+              max={100}
+              className="narrow"
+              value={rollout}
+              disabled={!isAdmin}
+              onChange={(e) => setRollout(e.target.value)}
             />
-            <button className="secondary" onClick={() => void saveDescription()}>
+            <input
+              aria-label={`target team for ${flag.name}`}
+              placeholder="team"
+              className="narrow-text"
+              value={team}
+              disabled={!isAdmin}
+              onChange={(e) => setTeam(e.target.value)}
+            />
+            <button
+              className="secondary"
+              disabled={!isAdmin || !dirty}
+              onClick={() => void saveTargeting()}
+            >
               Save
             </button>
-            <button className="secondary" onClick={() => setDescription(null)}>
-              Cancel
+          </div>
+        </td>
+
+        <td>
+          <div className="row">
+            <button
+              className="secondary"
+              disabled={!isAdmin}
+              onClick={() => setDescription(flag.description)}
+            >
+              Edit description
+            </button>
+            <button className="secondary" onClick={() => void toggleHistory()}>
+              History
+            </button>
+            <button className="danger" disabled={!isAdmin} onClick={remove}>
+              Delete
             </button>
           </div>
-        )}
-        {history && <AuditList entries={history} emptyText="no history yet" />}
-      </td>
+          <div className="muted mt-xs" title={flag.updated_at}>
+            Updated {formatTimestamp(flag.updated_at)}
+          </div>
+        </td>
+      </tr>
 
-      <td>
-        <span className={`pill ${flag.enabled ? "on" : "off"}`}>
-          {flag.enabled ? "ON" : "OFF"}
-        </span>
-      </td>
-
-      <td>
-        <div className="row">
-          <input
-            aria-label={`rollout percentage for ${flag.name}`}
-            type="number"
-            min={0}
-            max={100}
-            className="narrow"
-            value={rollout}
-            disabled={!isAdmin}
-            onChange={(e) => setRollout(e.target.value)}
-          />
-          %
-          <input
-            aria-label={`target team for ${flag.name}`}
-            placeholder="team"
-            className="narrow-text"
-            value={team}
-            disabled={!isAdmin}
-            onChange={(e) => setTeam(e.target.value)}
-          />
-          <button className="secondary" disabled={!isAdmin} onClick={() => void saveTargeting()}>
-            Save
-          </button>
-        </div>
-      </td>
-
-      <td>
-        <div className="row">
-          <button disabled={!isAdmin} onClick={() => void update({ enabled: !flag.enabled })}>
-            {flag.enabled ? "Disable" : "Enable"}
-          </button>
-          <button
-            className="secondary"
-            disabled={!isAdmin}
-            onClick={() => setDescription(flag.description)}
-          >
-            Edit description
-          </button>
-          <button className="secondary" onClick={() => void toggleHistory()}>
-            History
-          </button>
-          <button className="secondary" disabled={!isAdmin} onClick={remove}>
-            Delete
-          </button>
-        </div>
-      </td>
-    </tr>
+      {history && (
+        <tr>
+          <td className="history-cell" colSpan={4}>
+            <div className="card-head">
+              <h2>History · {flag.name}</h2>
+            </div>
+            <AuditList entries={history} emptyText="No history yet." />
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

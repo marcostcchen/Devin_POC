@@ -1,4 +1,4 @@
-/** Create-flag form. Disabled entirely for viewers. */
+/** Create-flag form, revealed from the flag list toolbar (admins only). */
 
 import { useState } from "react";
 import type { FlagCreate } from "../types";
@@ -12,11 +12,11 @@ const EMPTY: FlagCreate = {
 };
 
 interface Props {
-  disabled: boolean;
   onCreate: (flag: FlagCreate) => Promise<boolean>;
+  onCancel: () => void;
 }
 
-export function NewFlagForm({ disabled, onCreate }: Props) {
+export function NewFlagForm({ onCreate, onCancel }: Props) {
   const [draft, setDraft] = useState<FlagCreate>(EMPTY);
 
   const submit = async () => {
@@ -24,60 +24,65 @@ export function NewFlagForm({ disabled, onCreate }: Props) {
   };
 
   return (
-    <section className="card">
-      <strong>New flag</strong>
-      <div className="row">
-        <input
-          id="new-name"
-          placeholder="flag-name"
-          value={draft.name}
-          disabled={disabled}
-          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-        />
-        <input
-          id="new-description"
-          placeholder="description"
-          className="wide"
-          value={draft.description}
-          disabled={disabled}
-          onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-        />
-        <label>
-          rollout %{" "}
+    <div className="card-body">
+      <div className="form-grid">
+        <label className="form-field" htmlFor="new-name">
+          Name
+          <input
+            id="new-name"
+            placeholder="flag-name"
+            value={draft.name}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          />
+        </label>
+        <label className="form-field" htmlFor="new-description">
+          Description
+          <input
+            id="new-description"
+            placeholder="What does it gate?"
+            value={draft.description}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+          />
+        </label>
+        <label className="form-field" htmlFor="new-rollout">
+          Rollout %
           <input
             id="new-rollout"
             type="number"
             min={0}
             max={100}
-            className="narrow"
             value={draft.rollout_percentage}
-            disabled={disabled}
-            onChange={(e) =>
-              setDraft({ ...draft, rollout_percentage: Number(e.target.value) })
-            }
+            onChange={(e) => setDraft({ ...draft, rollout_percentage: Number(e.target.value) })}
           />
         </label>
-        <input
-          id="new-team"
-          placeholder="target team (optional)"
-          value={draft.target_team}
-          disabled={disabled}
-          onChange={(e) => setDraft({ ...draft, target_team: e.target.value })}
-        />
-        <label>
+        <label className="form-field" htmlFor="new-team">
+          Target team
           <input
-            id="new-enabled"
-            type="checkbox"
-            checked={draft.enabled}
-            disabled={disabled}
-            onChange={(e) => setDraft({ ...draft, enabled: e.target.checked })}
-          />{" "}
-          enabled
+            id="new-team"
+            placeholder="optional"
+            value={draft.target_team}
+            onChange={(e) => setDraft({ ...draft, target_team: e.target.value })}
+          />
         </label>
-        <button id="create-flag" disabled={disabled} onClick={() => void submit()}>
-          Create
-        </button>
+        <div className="form-actions">
+          <label className="switch">
+            <input
+              id="new-enabled"
+              type="checkbox"
+              checked={draft.enabled}
+              onChange={(e) => setDraft({ ...draft, enabled: e.target.checked })}
+            />
+            <span className="track" />
+            <span className="switch-label">{draft.enabled ? "ON" : "OFF"}</span>
+          </label>
+          <button id="create-flag" onClick={() => void submit()}>
+            Create
+          </button>
+          <button className="secondary" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }

@@ -39,6 +39,15 @@ cd web && npm run dev                       # terminal 2, http://localhost:5173
 There is no real auth: the client sends the selected identity in an `X-User` header,
 which the server trusts. That is intentional for this POC.
 
+## The panel
+
+A sticky top bar (identity switcher + current role), summary counts, then a two-column
+workspace: the flag list on the left, the *Evaluate* panel and global activity feed in a
+right-hand rail that collapses under the list on narrow screens. Each flag row has an
+on/off switch, a rollout bar with the stored percentage and team, inline targeting and
+description editors, and a *History* button that expands the audit trail beneath the row.
+The toolbar filters by name/description and by state, and reveals the create form.
+
 ## Layout
 
 ```
@@ -56,8 +65,11 @@ app/
 web/src/
   api.ts           Typed fetch client (adds the X-User header)
   types.ts         Mirrors the pydantic schemas
+  format.ts        Display helpers (timestamp formatting)
+  index.css        Design tokens and layout
   hooks/           useAdminPanel: identity, flags, activity, error state
-  components/      IdentityBar, NewFlagForm, FlagTable, FlagRow, AuditList, EvaluatePanel
+  components/      IdentityBar, StatsBar, ErrorBanner, FlagTable, FlagRow,
+                   NewFlagForm, AuditList, EvaluatePanel
 tests/             API smoke tests + unit tests for the targeting logic
 ```
 

@@ -16,32 +16,50 @@ export function EvaluatePanel({ onEvaluate }: Props) {
 
   return (
     <section className="card">
-      <strong>Evaluate</strong>
-      <div className="row">
-        <input
-          id="evaluate-flag"
-          placeholder="flag-name"
-          value={flag}
-          onChange={(e) => setFlag(e.target.value)}
-        />
-        <input
-          id="evaluate-user"
-          placeholder="user id"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-        />
-        <input
-          id="evaluate-team"
-          placeholder="team"
-          value={team}
-          onChange={(e) => setTeam(e.target.value)}
-        />
-        <button id="evaluate" className="secondary" onClick={() => void run()}>
-          Evaluate
-        </button>
-        <span id="evaluate-result" className="muted">
-          {result}
-        </span>
+      <div className="card-head">
+        <h2>Evaluate</h2>
+        <span className="muted spacer">as an SDK would</span>
+      </div>
+      <div className="card-body">
+        <div className="form-grid">
+          <label className="form-field" htmlFor="evaluate-flag">
+            Flag
+            <input
+              id="evaluate-flag"
+              placeholder="flag-name"
+              value={flag}
+              onChange={(e) => setFlag(e.target.value)}
+            />
+          </label>
+          <label className="form-field" htmlFor="evaluate-user">
+            User id
+            <input
+              id="evaluate-user"
+              placeholder="user-1"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+            />
+          </label>
+          <label className="form-field" htmlFor="evaluate-team">
+            Team
+            <input
+              id="evaluate-team"
+              placeholder="optional"
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="row mt">
+          <button id="evaluate" onClick={() => void run()}>
+            Evaluate
+          </button>
+        </div>
+        {result && (
+          <div id="evaluate-result" className="result">
+            {result}
+          </div>
+        )}
       </div>
     </section>
   );

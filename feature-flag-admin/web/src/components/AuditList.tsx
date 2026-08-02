@@ -1,5 +1,6 @@
-/** Renders audit entries as one line each, newest first. */
+/** Renders audit entries, used for both per-flag history and global activity. */
 
+import { formatTimestamp } from "../format";
 import type { AuditEntry } from "../types";
 
 interface Props {
@@ -9,18 +10,20 @@ interface Props {
 
 export function AuditList({ entries, emptyText }: Props) {
   if (entries.length === 0) {
-    return (
-      <ul className="audit">
-        <li className="muted">{emptyText}</li>
-      </ul>
-    );
+    return <p className="muted">{emptyText}</p>;
   }
   return (
     <ul className="audit">
       {entries.map((entry) => (
         <li key={entry.id}>
-          {`${entry.created_at} — ${entry.actor} ${entry.action} ${entry.flag_name}`}
-          {entry.detail && ` (${entry.detail})`}
+          <span>
+            {`${entry.actor} ${entry.action} `}
+            <strong>{entry.flag_name}</strong>
+            {entry.detail && ` — ${entry.detail}`}
+          </span>
+          <span className="audit-meta" title={entry.created_at}>
+            {formatTimestamp(entry.created_at)}
+          </span>
         </li>
       ))}
     </ul>
