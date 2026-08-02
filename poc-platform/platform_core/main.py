@@ -162,12 +162,28 @@ def reload_registry() -> dict[str, Any]:
     return {"apps": registry.ids(), "problems": [e.model_dump() for e in registry.errors]}
 
 
+# Reading order in the console; anything else follows, alphabetically.
+DOC_ORDER = [
+    "poc-environment",
+    "platform-contract",
+    "target-architecture",
+    "roadmap",
+    "graduating-a-poc",
+]
+
+
+def _doc_rank(filename: str) -> tuple[int, str]:
+    slug = filename[:-3]
+    return (DOC_ORDER.index(slug) if slug in DOC_ORDER else len(DOC_ORDER), slug)
+
+
 def _docs_index() -> list[dict[str, str]]:
     if not os.path.isdir(DOCS_DIR):
         return []
     docs = []
-    for filename in sorted(os.listdir(DOCS_DIR)):
-        if not filename.endswith(".md"):
+    # README.md is the folder's index on GitHub; the console has its own tabs.
+    for filename in sorted(os.listdir(DOCS_DIR), key=_doc_rank):
+        if not filename.endswith(".md") or filename == "README.md":
             continue
         with open(os.path.join(DOCS_DIR, filename), "r", encoding="utf-8") as handle:
             first_line = handle.readline().strip()
@@ -217,6 +233,8 @@ def console() -> FileResponse:
 
 
 app.mount("/console", StaticFiles(directory=CONSOLE_DIR), name="console")
+# Images referenced by the docs, which the console renders inline.
+app.mount("/docs", StaticFiles(directory=DOCS_DIR), name="docs")
 
 
 def gateway_url(host: Optional[str] = None) -> str:

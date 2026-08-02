@@ -26,8 +26,14 @@ the output.
 
 ## Docs
 
+[`docs/`](docs/) is the documentation folder; every page is also a tab in the
+console.
+
 - [POC environment: possible vs not possible](docs/poc-environment.md) — read this first.
 - [The platform contract](docs/platform-contract.md) — what an app must do to be hosted.
+- [Target architecture](docs/target-architecture.md) — the platform this POC rehearses,
+  and what it does and does not cover.
+- [Next-step proposals](docs/roadmap.md) — the increments that close those gaps.
 - [Graduating a prototype](docs/graduating-a-poc.md) — the checklist for making one real.
 
 ## Layout
@@ -48,7 +54,8 @@ poc-platform/
     proxy.py          /apps/<id>/... -> 127.0.0.1:<port>/...
     main.py           FastAPI: console, platform API, proxy routes
   console/            the console UI (plain HTML/CSS/JS, no build step)
-  docs/               environment, contract, graduation
+  docs/               environment, contract, target architecture, roadmap, graduation
+    images/           diagrams referenced by the docs
   tests/              manifest, policy, identity and gateway tests
   .data/              runtime state: per-app databases and logs (gitignored)
 ```

@@ -331,6 +331,14 @@ details ul {
   letter-spacing: 0;
 }
 
+.doc img {
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  margin: 6px 0 14px;
+}
+
 .doc table {
   border-collapse: collapse;
   width: 100%;

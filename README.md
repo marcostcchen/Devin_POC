@@ -17,10 +17,17 @@ cd poc-platform && ./run.sh     # console on http://localhost:8080
 
 ## Start here
 
+Documentation lives in [`poc-platform/docs/`](poc-platform/docs/) and is also
+served in the console.
+
 - **[What is possible in this POC environment, and what is not](poc-platform/docs/poc-environment.md)** —
   the boundary of what any demo here can tell you.
 - [The platform contract](poc-platform/docs/platform-contract.md) — what a prototype
   must do to be hosted, and how to add a new one.
+- [Target architecture](poc-platform/docs/target-architecture.md) — the in-house
+  platform this POC rehearses, mapped box by box against what is actually here.
+- [Next-step proposals](poc-platform/docs/roadmap.md) — the increments that would
+  close those gaps, each with the question it answers.
 - [Graduating a prototype](poc-platform/docs/graduating-a-poc.md) — the checklist for
   making one real.
 

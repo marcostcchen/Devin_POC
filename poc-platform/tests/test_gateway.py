@@ -162,8 +162,14 @@ def test_unknown_prototype_is_a_404(console):
 
 def test_docs_are_served_to_the_console(console):
     slugs = [doc["slug"] for doc in console.get("/api/platform/overview").json()["docs"]]
-    assert "poc-environment" in slugs
+    assert {"poc-environment", "platform-contract", "target-architecture", "roadmap"} <= set(slugs)
     assert console.get("/api/platform/docs/poc-environment").text.startswith("#")
+
+
+def test_doc_images_are_served(console):
+    response = console.get("/docs/images/target-architecture.png")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
 
 
 def test_docs_endpoint_refuses_to_escape_the_docs_directory(console):

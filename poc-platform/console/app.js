@@ -171,7 +171,12 @@ function renderPolicy(policy) {
     "A prototype that breaks a rule cannot be started from this console.";
 }
 
-/** Minimal markdown -> HTML for the docs pane (headings, lists, tables, code). */
+// Docs reference their images relatively so they render on GitHub too; here the
+// pages are fetched into the console, so point those at the docs static mount.
+const DOC_ASSETS = "/docs";
+const SAFE_SRC = /^[\w./-]+$/;
+
+/** Minimal markdown -> HTML for the docs pane (headings, lists, tables, images, code). */
 function renderMarkdown(markdown) {
   const inline = (text) =>
     text
@@ -179,16 +184,31 @@ function renderMarkdown(markdown) {
       .replace(/</g, "&lt;")
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) =>
+        SAFE_SRC.test(src)
+          ? `<img src="${src.startsWith("/") ? src : `${DOC_ASSETS}/${src}`}" alt="${alt.replace(/"/g, "&quot;")}">`
+          : match,
+      )
+      // A link to a sibling page opens it as a tab instead of leaving the console.
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, href) =>
+        /^[\w-]+\.md$/.test(href)
+          ? `<a href="#" data-doc="${href.slice(0, -3)}">${text}</a>`
+          : `<a href="${href}">${text}</a>`,
+      );
 
   const lines = markdown.split("\n");
   const out = [];
   let list = null;
   let table = null;
   let code = null;
+  let para = null;
 
   const closeList = () => {
     if (list) out.push(`<ul>${list.join("")}</ul>`), (list = null);
+  };
+  // The docs are hard-wrapped for review, so a run of lines is one paragraph.
+  const closePara = () => {
+    if (para) out.push(`<p>${inline(para.join(" "))}</p>`), (para = null);
   };
   const closeTable = () => {
     if (!table) return;
@@ -206,6 +226,7 @@ function renderMarkdown(markdown) {
   for (const line of lines) {
     if (line.startsWith("```")) {
       if (code === null) {
+        closePara();
         closeList();
         closeTable();
         code = [];
@@ -225,26 +246,36 @@ function renderMarkdown(markdown) {
     const isRow = line.trim().startsWith("|") && line.trim().endsWith("|");
 
     if (heading) {
+      closePara();
       closeList();
       closeTable();
       out.push(`<h${heading[1].length}>${inline(heading[2])}</h${heading[1].length}>`);
     } else if (bullet) {
+      closePara();
       closeTable();
       (list ??= []).push(`<li>${inline(bullet[1])}</li>`);
     } else if (isRow) {
+      closePara();
       closeList();
       const cells = line.trim().slice(1, -1).split("|").map((cell) => cell.trim());
       if (cells.every((cell) => /^:?-{2,}:?$/.test(cell))) continue;
       (table ??= []).push(cells);
     } else if (line.trim() === "") {
+      closePara();
       closeList();
       closeTable();
+    } else if (list) {
+      // A wrapped continuation of the bullet above.
+      list[list.length - 1] = list[list.length - 1].replace(
+        /<\/li>$/,
+        ` ${inline(line.trim())}</li>`,
+      );
     } else {
-      closeList();
       closeTable();
-      out.push(`<p>${inline(line)}</p>`);
+      (para ??= []).push(line.trim());
     }
   }
+  closePara();
   closeList();
   closeTable();
   return out.join("\n");
@@ -268,7 +299,15 @@ async function openDoc(slug) {
   state.openDoc = slug;
   renderDocTabs(state.overview.docs);
   const markdown = await api(`/api/platform/docs/${slug}`);
-  $("doc-body").innerHTML = renderMarkdown(markdown);
+  const body = $("doc-body");
+  body.innerHTML = renderMarkdown(markdown);
+  body.querySelectorAll("a[data-doc]").forEach((link) => {
+    link.onclick = (event) => {
+      event.preventDefault();
+      openDoc(link.dataset.doc);
+    };
+  });
+  body.scrollTop = 0;
 }
 
 async function openLogs(appId, name) {
