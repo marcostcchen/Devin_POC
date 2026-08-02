@@ -1,6 +1,6 @@
 /** One flag: state pill, targeting editor, actions and collapsible history. */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AuditList } from "./AuditList";
 import type { AuditEntry, Flag, FlagUpdate } from "../types";
 
@@ -18,13 +18,15 @@ export function FlagRow({ flag, isAdmin, onUpdate, onDelete, loadHistory }: Prop
   const [description, setDescription] = useState<string | null>(null);
   const [history, setHistory] = useState<AuditEntry[] | null>(null);
 
-  // Re-sync the targeting inputs whenever the server's copy changes, so a
-  // rejected save (e.g. rollout 150) does not leave a value that was never
-  // stored sitting in the row.
-  useEffect(() => {
+  const resetTargeting = useCallback(() => {
     setRollout(String(flag.rollout_percentage));
     setTeam(flag.target_team);
-  }, [flag.rollout_percentage, flag.target_team, flag.updated_at]);
+  }, [flag.rollout_percentage, flag.target_team]);
+
+  // Keep the inputs on the stored values: they follow the server's copy when it
+  // changes, and snap back when a save is rejected (e.g. rollout 150), so the
+  // row never displays a value that was never stored.
+  useEffect(resetTargeting, [resetTargeting]);
 
   const refreshHistory = async () => setHistory(await loadHistory(flag.id));
 
@@ -35,8 +37,10 @@ export function FlagRow({ flag, isAdmin, onUpdate, onDelete, loadHistory }: Prop
     return ok;
   };
 
-  const saveTargeting = () =>
-    void update({ rollout_percentage: Number(rollout), target_team: team });
+  const saveTargeting = async () => {
+    const ok = await update({ rollout_percentage: Number(rollout), target_team: team });
+    if (!ok) resetTargeting();
+  };
 
   const saveDescription = async () => {
     if (description !== null && (await update({ description }))) setDescription(null);
@@ -102,7 +106,7 @@ export function FlagRow({ flag, isAdmin, onUpdate, onDelete, loadHistory }: Prop
             disabled={!isAdmin}
             onChange={(e) => setTeam(e.target.value)}
           />
-          <button className="secondary" disabled={!isAdmin} onClick={saveTargeting}>
+          <button className="secondary" disabled={!isAdmin} onClick={() => void saveTargeting()}>
             Save
           </button>
         </div>
