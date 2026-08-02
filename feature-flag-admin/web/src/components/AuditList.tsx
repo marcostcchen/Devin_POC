@@ -19,7 +19,7 @@ export function AuditList({ entries, emptyText }: Props) {
     <ul className="audit">
       {entries.map((entry) => (
         <li key={entry.id}>
-          {entry.created_at} — {entry.actor} {entry.action} {entry.flag_name}
+          {`${entry.created_at} — ${entry.actor} ${entry.action} ${entry.flag_name}`}
           {entry.detail && ` (${entry.detail})`}
         </li>
       ))}
