@@ -22,20 +22,28 @@ export function IdentityBar({ identity, onActAs }: Props) {
         </span>
       </div>
 
-      <label className="field-inline" htmlFor="user">
-        Acting as
-        <select
-          id="user"
-          value={identity?.email ?? ""}
-          onChange={(event) => onActAs(event.target.value)}
-        >
-          {Object.entries(identity?.users ?? {}).map(([email, userRole]) => (
-            <option key={email} value={email}>
-              {email} ({userRole})
-            </option>
-          ))}
-        </select>
-      </label>
+      {identity?.platform_managed ? (
+        <span className="field-inline">
+          Acting as
+          <strong>{identity.display_name || identity.email}</strong>
+          <a href={identity.platform_console_url || "/"}>switch in the platform console</a>
+        </span>
+      ) : (
+        <label className="field-inline" htmlFor="user">
+          Acting as
+          <select
+            id="user"
+            value={identity?.email ?? ""}
+            onChange={(event) => onActAs(event.target.value)}
+          >
+            {Object.entries(identity?.users ?? {}).map(([email, userRole]) => (
+              <option key={email} value={email}>
+                {email} ({userRole})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <span className={`pill ${role === "admin" ? "accent" : ""}`} title="Current role">
         {role === "admin" ? "admin · can edit" : `${role} · read-only`}

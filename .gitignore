@@ -4,3 +4,6 @@ __pycache__/
 *.db
 test-plan.md
 test-report.md
+
+# Platform runtime state: per-app databases and process logs.
+poc-platform/.data/

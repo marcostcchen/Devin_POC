@@ -5,8 +5,12 @@ export type Role = "admin" | "viewer";
 export interface Identity {
   email: string;
   role: Role;
-  /** Every identity the switcher may act as, keyed by email. */
+  /** Every identity the switcher may act as, keyed by email. Empty under the platform. */
   users: Record<string, Role>;
+  display_name: string;
+  /** True when the POC platform chose the identity, so the local switcher is hidden. */
+  platform_managed: boolean;
+  platform_console_url: string;
 }
 
 export interface Flag {

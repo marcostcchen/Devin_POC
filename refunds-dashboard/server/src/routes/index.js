@@ -14,6 +14,16 @@ apiRoutes.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// Who the server thinks is calling. Under the POC platform the persona is
+// chosen in its console, so the client hides its own role switcher.
+apiRoutes.get("/me", (req, res) => {
+  res.json({
+    actor: req.actor,
+    platformManaged: config.platformManaged,
+    platformConsoleUrl: config.platformManaged ? "/" : "",
+  });
+});
+
 // Lets the client render statuses, reason codes and the threshold without duplicating them.
 apiRoutes.get("/config", (req, res) => {
   res.json({

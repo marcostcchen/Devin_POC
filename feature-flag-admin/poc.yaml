@@ -1,0 +1,41 @@
+# Platform manifest. Read by ../poc-platform: see poc-platform/docs/platform-contract.md.
+schema_version: 1
+
+id: feature-flag-admin
+name: Feature Flag Admin
+summary: Toggle features without a deploy, with audit trail and %/team targeting.
+owner: Platform Experiments
+stage: poc
+stack: [FastAPI, SQLite, React, TypeScript]
+
+runtime:
+  command: ./run.sh
+  port: 8000
+  health_path: /healthz
+  # Cold start builds the React app, so the first boot is slow.
+  ready_timeout_seconds: 600
+
+identity:
+  mode: platform-headers
+  roles: [admin, viewer]
+  default_role: viewer
+
+data:
+  classification: synthetic
+  store: sqlite
+  reset_command: rm -f "$PLATFORM_DATA_DIR/flags.db"
+
+capabilities:
+  - CRUD for flags with server-enforced admin/viewer permissions
+  - Append-only audit log of every create, toggle, update and delete
+  - Percentage rollouts with sticky sha256 bucketing per flag and user
+  - Optional per-team targeting, with an evaluate panel that explains each result
+
+limitations:
+  - No SDK or client library; evaluation is an HTTP call per lookup with no caching
+  - Targeting is one percentage plus one team, not a rule engine over user attributes
+  - No approval flow, scheduled flags or automatic cleanup of stale flags
+  - Identity is a trusted header, so any caller can act as any role
+  - SQLite with a process-wide lock; no migrations and no history beyond the audit table
+
+docs: [README.md]

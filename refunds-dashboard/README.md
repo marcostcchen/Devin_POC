@@ -32,6 +32,17 @@ npm run dev          # starts the API (:4000) and the Vite dev server (:5173)
 
 Then open <http://localhost:5173>.
 
+For a single-process run — client built and served by the API, the same way the
+platform starts it — use `./run.sh` and open <http://localhost:4000>.
+
+### Under the POC platform
+
+This app is also a platform prototype ([`poc.yaml`](poc.yaml)): start it from the
+[platform console](../poc-platform/) and it is served at `/apps/refunds-dashboard/`,
+the persona selected there becomes the acting user (the role switcher turns into a
+read-only label), and the SQLite file moves to the platform's disposable state
+directory. Standalone, nothing changes.
+
 Prefer one terminal per service? Run these instead of `npm run dev`:
 
 ```bash

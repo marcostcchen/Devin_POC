@@ -14,19 +14,29 @@ from app.seed import seed
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-# Mocked identities: no real auth is in scope for this POC. The UI sends the
-# selected user via the X-User header; roles are looked up here.
+# Set by the POC platform when it supervises this app (see ../poc.yaml and
+# ../poc-platform/docs/platform-contract.md); empty when running standalone.
+PLATFORM_MANAGED = os.environ.get("PLATFORM_MANAGED") == "1"
+PLATFORM_BASE_PATH = os.environ.get("PLATFORM_BASE_PATH", "").rstrip("/")
+
+# Mocked identities: no real auth is in scope for this POC. Standalone, the UI
+# sends the selected user via the X-User header and roles are looked up here;
+# under the platform the gateway injects the persona and its mapped role.
 USERS = {
     "nora@example.com": "analyst",
     "omar@example.com": "analyst",
     "priya@example.com": "senior_reviewer",
 }
 DEFAULT_USER = "nora@example.com"
+# Roles this app implements, mirrored in poc.yaml.
+ROLES = ("analyst", "senior_reviewer")
 
 # action -> status the case ends up in
 OUTCOMES = {"claim": "in_review", "approve": "closed", "reject": "closed", "escalate": "escalated"}
 
-app = FastAPI(title="KYC Review Queue")
+# `root_path` only affects generated links (docs, OpenAPI): the gateway strips
+# its /apps/kyc-review-queue prefix before the request reaches us.
+app = FastAPI(title="KYC Review Queue", root_path=PLATFORM_BASE_PATH)
 
 
 @app.on_event("startup")
@@ -40,16 +50,30 @@ def now() -> str:
 
 
 class Actor:
-    def __init__(self, email: str, role: str) -> None:
+    def __init__(self, email: str, role: str, display_name: str = "") -> None:
         self.email = email
         self.role = role
+        self.display_name = display_name or email
 
     @property
     def is_senior(self) -> bool:
         return self.role == "senior_reviewer"
 
 
-def current_actor(x_user: Optional[str] = Header(default=None)) -> Actor:
+def current_actor(
+    x_user: Optional[str] = Header(default=None),
+    x_platform_user: Optional[str] = Header(default=None),
+    x_platform_user_name: Optional[str] = Header(default=None),
+    x_platform_role: Optional[str] = Header(default=None),
+) -> Actor:
+    if PLATFORM_MANAGED and x_platform_user:
+        # The platform owns the roster; only the role has to be one we implement.
+        if x_platform_role not in ROLES:
+            raise HTTPException(
+                status_code=401, detail=f"platform sent unsupported role {x_platform_role!r}"
+            )
+        return Actor(x_platform_user, x_platform_role, x_platform_user_name or "")
+
     email = x_user or DEFAULT_USER
     role = USERS.get(email)
     if role is None:
@@ -84,9 +108,24 @@ def fetch_case(conn: sqlite3.Connection, case_id: int, actor: Actor) -> sqlite3.
     return row
 
 
+@app.get("/healthz")
+def healthz() -> dict:
+    """Readiness probe the POC platform polls before routing traffic here."""
+    return {"status": "ok", "app": "kyc-review-queue", "platform_managed": PLATFORM_MANAGED}
+
+
 @app.get("/api/me")
 def me(actor: Actor = Depends(current_actor)) -> dict:
-    return {"email": actor.email, "role": actor.role, "users": USERS}
+    return {
+        "email": actor.email,
+        "role": actor.role,
+        "display_name": actor.display_name,
+        # Under the platform the roster lives in its console, so the local
+        # switcher has nothing to offer.
+        "users": {} if PLATFORM_MANAGED else USERS,
+        "platform_managed": PLATFORM_MANAGED,
+        "platform_console_url": "/" if PLATFORM_MANAGED else "",
+    }
 
 
 @app.get("/api/cases", response_model=list[Case])
