@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>KYC Review Queue</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #f6f7f9; color: #1c1f23; }
+    h1 { font-size: 20px; margin: 0; }
+    header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .card { background: #fff; border: 1px solid #e2e5e9; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eceef1; vertical-align: top; }
+    th { font-size: 12px; text-transform: uppercase; color: #6b7280; }
+    tr.case { cursor: pointer; }
+    tr.case:hover { background: #f9fafb; }
+    tr.case.selected { background: #eef4ff; }
+    input, select, button, textarea { font: inherit; padding: 6px 8px; border: 1px solid #cbd2d9; border-radius: 6px; }
+    textarea { width: 100%; box-sizing: border-box; min-height: 62px; }
+    button { background: #1f6feb; color: #fff; border-color: #1f6feb; cursor: pointer; }
+    button.secondary { background: #fff; color: #1c1f23; border-color: #cbd2d9; }
+    button.danger { background: #b42318; border-color: #b42318; }
+    button.warn { background: #b45309; border-color: #b45309; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .pill { padding: 2px 8px; border-radius: 999px; font-size: 12px; text-transform: uppercase; }
+    .risk-high { background: #fee2e2; color: #991b1b; }
+    .risk-medium { background: #fef3c7; color: #92400e; }
+    .risk-low { background: #dcfce7; color: #166534; }
+    .st-new { background: #e0e7ff; color: #3730a3; }
+    .st-in_review { background: #cffafe; color: #155e75; }
+    .st-escalated { background: #fee2e2; color: #991b1b; }
+    .st-closed { background: #f1f3f5; color: #495057; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .muted { color: #6b7280; font-size: 12px; }
+    .columns { display: flex; gap: 20px; align-items: flex-start; }
+    .columns > .card:first-child { flex: 3; min-width: 0; }
+    .columns > .card:last-child { flex: 2; min-width: 320px; }
+    #error { color: #b42318; }
+    ul.history, ul.docs { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>KYC Review Queue</h1>
+    <label>Acting as
+      <select id="user"></select>
+    </label>
+    <span id="role" class="pill st-closed"></span>
+    <span id="error"></span>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <label>Risk
+        <select id="f-risk">
+          <option value="">all</option>
+          <option value="high">high</option>
+          <option value="medium">medium</option>
+          <option value="low">low</option>
+        </select>
+      </label>
+      <label>Status
+        <select id="f-status">
+          <option value="">all</option>
+          <option value="new">new</option>
+          <option value="in_review">in_review</option>
+          <option value="escalated">escalated</option>
+          <option value="closed">closed</option>
+        </select>
+      </label>
+      <label>Sort by
+        <select id="f-sort">
+          <option value="risk">risk</option>
+          <option value="status">status</option>
+          <option value="created">created</option>
+          <option value="name">name</option>
+        </select>
+      </label>
+      <span id="count" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="columns">
+    <div class="card">
+      <strong>Queue</strong>
+      <table>
+        <thead>
+          <tr><th>Reference</th><th>Customer</th><th>Risk</th><th>Status</th></tr>
+        </thead>
+        <tbody id="cases"></tbody>
+      </table>
+      <p id="escalation-note" class="muted" hidden>
+        Escalated cases are hidden from the analyst role and only appear here for a senior reviewer.
+      </p>
+    </div>
+
+    <div class="card" id="detail">
+      <strong>Case detail</strong>
+      <p class="muted">Select a case from the queue.</p>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
