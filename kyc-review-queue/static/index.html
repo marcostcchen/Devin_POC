@@ -43,7 +43,9 @@
     <h1>KYC Review Queue</h1>
     <label>Acting as
       <select id="user"></select>
+      <strong id="acting-as" hidden></strong>
     </label>
+    <a id="console-link" class="muted" href="/" hidden>switch in the platform console</a>
     <span id="role" class="pill st-closed"></span>
     <span id="error"></span>
   </header>
@@ -99,6 +101,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <!-- Relative so the page also works behind the platform gateway prefix. -->
+  <script src="static/app.js"></script>
 </body>
 </html>

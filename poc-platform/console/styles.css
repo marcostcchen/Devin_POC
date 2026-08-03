@@ -1,0 +1,391 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --line: #e2e5e9;
+  --text: #1c1f23;
+  --muted: #6b7280;
+  --accent: #1f6feb;
+  --ok: #166534;
+  --ok-bg: #dcfce7;
+  --warn: #92400e;
+  --warn-bg: #fef3c7;
+  --bad: #991b1b;
+  --bad-bg: #fee2e2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
+h2 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+h3 {
+  font-size: 13px;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+code {
+  background: #f1f3f5;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+}
+
+.brand-mark {
+  font-size: 22px;
+  color: var(--accent);
+}
+
+.brand-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.env-badge {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+select,
+button {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid #cbd2d9;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+}
+
+button {
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.ghost {
+  color: var(--muted);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.card h3 {
+  font-size: 15px;
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--muted);
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  background: #f1f3f5;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.pill.running {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.pill.starting {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.pill.unhealthy {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+.pill.accent {
+  background: #e7f0ff;
+  color: var(--accent);
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+details summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+details ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.violations {
+  background: var(--bad-bg);
+  color: var(--bad);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.problems {
+  background: var(--bad-bg);
+  color: var(--bad);
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+
+.guardrails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.guardrail-col {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.guardrail-col h3.ok {
+  color: var(--ok);
+}
+
+.guardrail-col h3.no {
+  color: var(--bad);
+}
+
+.guardrail-col ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guardrail-col li strong {
+  display: block;
+}
+
+.guardrail-col li span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.guardrail-col li em {
+  display: block;
+  font-size: 13px;
+  color: var(--accent);
+  font-style: normal;
+}
+
+.doc-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+.doc-tabs button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.doc {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 22px;
+  overflow-x: auto;
+}
+
+.doc h1,
+.doc h2,
+.doc h3 {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.doc img {
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  margin: 6px 0 14px;
+}
+
+.doc table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+.doc th,
+.doc td {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.drawer {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  width: min(720px, 92vw);
+  background: #0f1115;
+  color: #e6edf3;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.25);
+  /* Above the sticky topbar, or its own Close button is unreachable. */
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+/* `display: flex` above beats the `hidden` attribute's UA rule, so restate it. */
+.drawer[hidden] {
+  display: none;
+}
+
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #21262d;
+}
+
+.drawer pre {
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}

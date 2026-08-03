@@ -14,6 +14,14 @@ Then open http://localhost:8000. The DB (`flags.db`) is created and seeded with
 three example flags on first start; delete it to reset. `PORT=9000 ./run.sh` to
 change the port.
 
+### Under the POC platform
+
+This app is also a platform prototype ([`poc.yaml`](poc.yaml)): start it from the
+[platform console](../poc-platform/) and it is served at
+`/apps/feature-flag-admin/`, the persona selected there becomes the acting user,
+and `flags.db` moves to the platform's disposable state directory. Standalone,
+nothing changes — the "Acting as" dropdown and the local database come back.
+
 For frontend work, run the API and the Vite dev server side by side — the dev
 server proxies `/api` to :8000 and gives you hot reload:
 

@@ -3,9 +3,12 @@ import sqlite3
 import threading
 from typing import Iterator
 
-DB_PATH = os.environ.get(
-    "KYC_DB_PATH", os.path.join(os.path.dirname(os.path.dirname(__file__)), "kyc.db")
+# Under the POC platform the database lives in the platform's disposable state
+# directory, so `poc-platform/reset.sh` wipes it with everything else.
+_DEFAULT_DIR = os.environ.get("PLATFORM_DATA_DIR") or os.path.dirname(
+    os.path.dirname(__file__)
 )
+DB_PATH = os.environ.get("KYC_DB_PATH", os.path.join(_DEFAULT_DIR, "kyc.db"))
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS cases (

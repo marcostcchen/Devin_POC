@@ -17,6 +17,11 @@ export function fetchAppConfig() {
   return request("/config");
 }
 
+/** The identity the server sees, and whether the POC platform picked it. */
+export function fetchCurrentActor() {
+  return request("/me");
+}
+
 export function fetchRefundRequests(filters, actor) {
   return request(`/refunds${buildQueryString(filters)}`, { actor });
 }

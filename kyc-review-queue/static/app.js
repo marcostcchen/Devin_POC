@@ -1,11 +1,15 @@
-let me = { email: "", role: "analyst" };
+let me = { email: "", role: "analyst", platformManaged: false };
 let selectedId = null;
 
 const $ = (id) => document.getElementById(id);
 const isSenior = () => me.role === "senior_reviewer";
 
+// Paths are resolved against the page URL so the same files work standalone
+// ('/') and behind the POC platform gateway ('/apps/kyc-review-queue/').
+const url = (path) => new URL(path, document.baseURI).toString();
+
 async function api(path, options = {}) {
-  const res = await fetch(path, {
+  const res = await fetch(url(path), {
     ...options,
     headers: { "Content-Type": "application/json", "X-User": me.email, ...(options.headers || {}) },
   });
@@ -34,10 +38,19 @@ function pill(text, cls) {
 }
 
 async function loadMe(email) {
-  const data = await fetch("/api/me", { headers: email ? { "X-User": email } : {} }).then((r) => r.json());
-  me = { email: data.email, role: data.role };
+  const data = await fetch(url("api/me"), {
+    headers: email ? { "X-User": email } : {},
+  }).then((r) => r.json());
+  me = { email: data.email, role: data.role, platformManaged: data.platform_managed };
   const select = $("user");
-  if (!select.options.length) {
+  if (me.platformManaged) {
+    // The platform console owns identity; show it instead of a switcher.
+    select.hidden = true;
+    $("acting-as").hidden = false;
+    $("acting-as").textContent = data.display_name || data.email;
+    $("console-link").hidden = false;
+    $("console-link").href = data.platform_console_url || "/";
+  } else if (!select.options.length) {
     for (const [addr, role] of Object.entries(data.users)) {
       const opt = document.createElement("option");
       opt.value = addr;
@@ -45,7 +58,7 @@ async function loadMe(email) {
       select.appendChild(opt);
     }
   }
-  select.value = me.email;
+  if (!me.platformManaged) select.value = me.email;
   const role = $("role");
   role.textContent = me.role.replace("_", " ");
   role.className = `pill ${isSenior() ? "st-escalated" : "st-in_review"}`;
@@ -80,8 +93,8 @@ function decisionLine(entry) {
 async function renderDetail(caseId) {
   const detail = $("detail");
   const [c, history] = await Promise.all([
-    api(`/api/cases/${caseId}`),
-    api(`/api/cases/${caseId}/history`),
+    api(`api/cases/${caseId}`),
+    api(`api/cases/${caseId}/history`),
   ]);
 
   detail.innerHTML = "";
@@ -169,7 +182,7 @@ async function submitDecision(caseId, action, reason) {
     return;
   }
   try {
-    await api(`/api/cases/${caseId}/decisions`, {
+    await api(`api/cases/${caseId}/decisions`, {
       method: "POST",
       body: JSON.stringify({ action, reason }),
     });
@@ -189,7 +202,7 @@ async function refresh() {
   const params = new URLSearchParams({ sort: $("f-sort").value });
   if ($("f-risk").value) params.set("risk_level", $("f-risk").value);
   if ($("f-status").value) params.set("status", $("f-status").value);
-  const cases = await api(`/api/cases?${params}`);
+  const cases = await api(`api/cases?${params}`);
 
   const tbody = $("cases");
   tbody.innerHTML = "";

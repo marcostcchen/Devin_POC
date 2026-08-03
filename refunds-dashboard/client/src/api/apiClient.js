@@ -1,5 +1,9 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000/api";
+// Under the POC platform the API is served from the same origin, one level
+// below the app's mount point (`/apps/refunds-dashboard/api`), so the built
+// client follows Vite's BASE_URL instead of the standalone dev-server URL.
+const API_BASE_URL = import.meta.env.VITE_PLATFORM_BASE_PATH
+  ? `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`
+  : (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000/api");
 
 /** Error carrying the API's status code and per-field validation details. */
 export class ApiError extends Error {

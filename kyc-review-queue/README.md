@@ -12,6 +12,14 @@ verification cases. FastAPI + SQLite + a single static HTML/JS page, no build st
 Open http://localhost:8001. `kyc.db` is created and seeded with 18 synthetic cases
 on first start; `rm kyc.db` to reset. `PORT=9000 ./run.sh` to change the port.
 
+### Under the POC platform
+
+This app is also a platform prototype ([`poc.yaml`](poc.yaml)): start it from the
+[platform console](../poc-platform/) and it is served at `/apps/kyc-review-queue/`,
+the persona selected there becomes the acting reviewer, and `kyc.db` moves to the
+platform's disposable state directory. Standalone, nothing changes — the
+"Acting as" dropdown and the local database come back.
+
 ## What it does
 
 - **Case queue**: reference, customer, risk level (low/medium/high, pre-assigned in

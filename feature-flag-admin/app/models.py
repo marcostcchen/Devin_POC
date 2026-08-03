@@ -79,6 +79,11 @@ class Identity(BaseModel):
     email: str
     role: str
     users: dict[str, str]
+    display_name: str = ""
+    #: True when the POC platform picked the identity; the UI then hides its own
+    #: switcher because the platform console owns that choice.
+    platform_managed: bool = False
+    platform_console_url: str = ""
 
 
 class EvaluationResult(BaseModel):

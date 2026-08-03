@@ -1,0 +1,94 @@
+# The rules of this environment, in machine-readable form.
+#
+# `limits` is enforced: the registry refuses to run a prototype whose manifest
+# breaks one of these rules. `allowed` / `not_allowed` are the human-facing
+# guardrails rendered in the console and expanded in docs/poc-environment.md.
+
+environment: poc
+
+limits:
+  # A manifest may only declare data that is safe to lose and safe to leak.
+  data_classifications: [synthetic, anonymized-sample]
+  # Local, throwaway stores only. No shared or managed databases.
+  data_stores: [sqlite, memory, file]
+  # Identity always comes from the platform as a mocked header.
+  identity_modes: [platform-headers]
+  # Nothing here claims to be more than a prototype.
+  stages: [poc, prototype]
+  # Every prototype must be honest about what it fakes.
+  min_limitations: 1
+
+allowed:
+  - title: Demonstrate a workflow end to end
+    detail: >-
+      Queue, detail, decision, audit trail — the full happy path with realistic
+      screens, so reviewers can react to the actual interaction rather than a
+      slide.
+  - title: Mocked identity and role-based behaviour
+    detail: >-
+      Switch between personas in the console and see permissions change. Roles
+      are enforced server-side inside each prototype, but the identity itself is
+      asserted by a header, not proven.
+  - title: Synthetic, deterministic seed data
+    detail: >-
+      Every prototype seeds itself on first start from a fixed dataset, so demos
+      look the same each time and a reset is one delete away.
+  - title: Local SQLite persistence
+    detail: >-
+      State survives a page refresh and a restart, which is enough to show a
+      workflow with history and an audit trail.
+  - title: Server-enforced business rules
+    detail: >-
+      Approval thresholds, required reasons, status transitions and rollout
+      targeting are real code, not UI theatre. They are the part worth reviewing.
+  - title: Append-only audit trails
+    detail: >-
+      Who did what, when and why is recorded for every state change so the shape
+      of a compliance story can be evaluated early.
+  - title: Throwaway integrations between prototypes
+    detail: >-
+      Apps may call each other through the gateway using platform identity
+      headers. Contracts are unversioned and may break without notice.
+
+not_allowed:
+  - title: Real authentication or SSO
+    detail: >-
+      There is no login, no password, no session security and no token
+      validation. Anyone who can reach a prototype can act as any persona by
+      sending a header.
+    instead: Pick a persona in the console; treat every role check as a demo of intent.
+  - title: Real customer, payment or personal data
+    detail: >-
+      No production exports, no anonymised-but-re-identifiable extracts, no
+      screenshots of live systems. Names, documents and card-like values are
+      generated.
+    instead: Extend the seed generators in each prototype.
+  - title: Writes to production systems
+    detail: >-
+      No prototype may call a production API, payment processor, ledger, email
+      or messaging system. Money movement and customer-visible side effects are
+      mocked at the boundary.
+    instead: Mock the call, record it in the audit trail, and document the gap.
+  - title: Handling production traffic or real users
+    detail: >-
+      Single process per app, SQLite with a process-wide lock, no pagination, no
+      caching, no rate limiting, no horizontal scale. Fine for a handful of
+      reviewers, wrong for a team-wide rollout.
+    instead: Treat load beyond a demo as a signal to graduate the prototype.
+  - title: Long-lived or authoritative data
+    detail: >-
+      Databases live in poc-platform/.data and are deleted whenever anyone
+      resets the environment. There are no migrations, no backups and no
+      retention guarantees.
+    instead: Export anything you need to keep before a reset.
+  - title: Secrets, keys or credentials
+    detail: >-
+      Nothing in this repository is a secret store. Config is plain env vars in
+      committed .env.example files.
+    instead: Keep prototypes credential-free; if one needs a key, it needs a real environment.
+  - title: Availability, security or compliance guarantees
+    detail: >-
+      No SLA, no monitoring, no alerting, no threat model, no penetration test,
+      no dependency scanning, no disaster recovery, no data-subject request
+      handling.
+    instead: Use docs/graduating-a-poc.md as the checklist before anything real depends on it.

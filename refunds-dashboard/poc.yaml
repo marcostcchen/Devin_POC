@@ -1,0 +1,42 @@
+# Platform manifest. Read by ../poc-platform: see poc-platform/docs/platform-contract.md.
+schema_version: 1
+
+id: refunds-dashboard
+name: Refunds Dashboard
+summary: Review, approve and track customer refund requests with a mocked payout step.
+owner: Payments Experiments
+stage: poc
+stack: [Express, SQLite, React, Vite]
+
+runtime:
+  # Builds the client and serves it from Express, so the app is one process.
+  command: ./run.sh
+  port: 4000
+  health_path: /healthz
+  ready_timeout_seconds: 600
+
+identity:
+  mode: platform-headers
+  roles: [support_agent, finance_approver]
+  default_role: support_agent
+
+data:
+  classification: synthetic
+  store: sqlite
+  reset_command: rm -rf "$PLATFORM_DATA_DIR/data"
+
+capabilities:
+  - Refund queue with status/amount filters, sorting and summary metrics
+  - Approve or deny with a required reason, validated on both client and server
+  - "Threshold rule: requests at or above $200 need finance approver sign-off"
+  - Append-only audit trail of every create, approve, deny and payout
+  - Mocked payout step that only a finance approver can trigger
+
+limitations:
+  - 'No payment processor: "mark as processed" flips a status and writes an audit row'
+  - No reconciliation, ledger, settlement matching or double-entry bookkeeping
+  - Amounts are SQLite REALs in USD, not integer cents with a currency
+  - No pagination, so the queue loads every matching row
+  - Identity is a trusted header, so any caller can approve their own refund
+
+docs: [README.md, docs/API.md]
