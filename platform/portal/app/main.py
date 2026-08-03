@@ -33,15 +33,14 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 config: PortalConfig = load()
 cookie_domain = os.environ.get("PORTAL_COOKIE_DOMAIN", config.domain)
 
-#: The demo's single session. The cookie is what actually identifies a browser,
-#: but subdomain cookies are fragile on local hostnames, so the last persona
-#: chosen here also stands in for anyone arriving without one. One reviewer at a
-#: time is the honest limit of this mock; see docs/poc-environment.md.
-last_persona: Optional[str] = None
-
 
 def current_principal(request: Request) -> Optional[Principal]:
-    email = request.cookies.get(COOKIE_NAME) or last_persona
+    """The cookie is the whole session: no cookie is no identity, never a default.
+
+    It is set for the parent domain, so one sign-in covers every project
+    subdomain — and a browser that did not sign in inherits nothing.
+    """
+    email = request.cookies.get(COOKIE_NAME)
     return config.principal(email) if email else None
 
 
@@ -85,10 +84,8 @@ def login_form(request: Request, rd: str = "") -> Response:
 
 @app.post("/login", include_in_schema=False)
 def login(email: str = Form(...), rd: str = Form(default="")) -> Response:
-    global last_persona
     if config.principal(email) is None:
         return RedirectResponse("/login", status_code=303)
-    last_persona = email
     response = RedirectResponse(rd or "/", status_code=303)
     response.set_cookie(
         COOKIE_NAME, email, domain=cookie_domain or None, path="/", samesite="lax"
@@ -98,8 +95,6 @@ def login(email: str = Form(...), rd: str = Form(default="")) -> Response:
 
 @app.post("/logout", include_in_schema=False)
 def logout() -> Response:
-    global last_persona
-    last_persona = None
     response = RedirectResponse("/", status_code=303)
     response.delete_cookie(COOKIE_NAME, domain=cookie_domain or None, path="/")
     return response

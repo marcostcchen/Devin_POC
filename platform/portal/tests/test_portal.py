@@ -44,7 +44,9 @@ def client():
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from app.main import app
 
-    with TestClient(app) as test_client:
+    # The session cookie is set for the parent domain, so the client has to be
+    # on a host under it for the browser half of the contract to hold.
+    with TestClient(app, base_url="http://portal.poc.test") as test_client:
         yield test_client
 
 
@@ -59,6 +61,12 @@ def test_signing_in_makes_the_subrequest_assert_the_persona(client):
     assert response.headers["X-Auth-Request-Email"] == "ada@example.com"
     assert response.headers["X-Auth-Request-User"] == "Ada Lovelace"
     assert response.headers["X-Auth-Request-Groups"] == "kyc-seniors"
+
+
+def test_a_second_browser_does_not_inherit_the_signed_in_persona(client):
+    client.post("/login", data={"email": "ada@example.com"}, follow_redirects=False)
+    other_browser = TestClient(client.app, base_url="http://portal.poc.test")
+    assert other_browser.get("/auth").status_code == 401
 
 
 def test_an_unknown_persona_cannot_be_asserted(client):
