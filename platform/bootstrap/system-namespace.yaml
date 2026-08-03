@@ -1,0 +1,11 @@
+# The one namespace the platform owns. Applied by `platformctl` before anything
+# else, because every Helm release's own state is kept here: a project's
+# namespace belongs to its release, so it cannot also hold it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: poc-platform
+  labels:
+    poc.platform/component: platform
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

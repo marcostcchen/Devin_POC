@@ -1,5 +1,11 @@
 # Refunds Dashboard
 
+> **The implementation is not currently in this repository** — only this README
+> and [`docs/API.md`](docs/API.md) remain, as the specification of a prototype
+> that could be rebuilt. There is nothing here to deploy, so the platform has no
+> `projects/refunds-dashboard.yaml`; adding one would be the whole onboarding
+> once the code exists.
+
 Internal tool for support and finance staff to review, approve and track customer
 refund requests. It ships with synthetic seed data — there is no real customer,
 payment or ledger data anywhere in this prototype.
@@ -35,13 +41,13 @@ Then open <http://localhost:5173>.
 For a single-process run — client built and served by the API, the same way the
 platform starts it — use `./run.sh` and open <http://localhost:4000>.
 
-### Under the POC platform
+### On the POC platform
 
-This app is also a platform prototype ([`poc.yaml`](poc.yaml)): start it from the
-[platform console](../poc-platform/) and it is served at `/apps/refunds-dashboard/`,
-the persona selected there becomes the acting user (the role switcher turns into a
-read-only label), and the SQLite file moves to the platform's disposable state
-directory. Standalone, nothing changes.
+To be deployable it would have to meet the
+[project contract](../platform/docs/project-contract.md): a Dockerfile, `$PORT`,
+a health path, state under `$DATA_DIR`, and the acting user read from the
+`X-Auth-Request-*` headers instead of the role switcher. Standalone behaviour
+would not change.
 
 Prefer one terminal per service? Run these instead of `npm run dev`:
 

@@ -1,0 +1,44 @@
+# Copy this file to <your-project-id>.yaml, fill it in, then:
+#
+#   ./platformctl validate
+#   ./platformctl deploy <your-project-id>
+#
+# This is the whole onboarding: no platform code changes, no chart changes.
+schema_version: 2
+
+id: my-project                     # lowercase, also the namespace and release name
+name: My Project
+summary: One sentence for the portal card.
+owner: Team or squad
+stage: poc                         # poc | prototype
+repo: ../my-project                # optional: path or URL, used by `platformctl build`
+
+image:
+  repository: poc/my-project       # prefixed with platform.registry when set
+  tag: "0.1.0"                     # must be pinned; latest/main/master are rejected
+
+runtime:
+  port: 8000                       # the port the container listens on ($PORT)
+  health_path: /healthz
+  replicas: 1
+  size: small                      # small | medium
+  env: {}                          # plain configuration only; credentials are rejected
+
+route:
+  subdomain: my-project            # https://<subdomain>.<platform domain>
+
+access:
+  roles: [viewer]                  # the roles the project implements
+  default_role: viewer             # what an unmapped user gets: least privilege
+  group_roles:                     # directory group -> project role
+    platform-admins: viewer
+
+data:
+  classification: synthetic        # synthetic | anonymized-sample
+  persistence: ephemeral           # ephemeral | <n>Gi
+
+capabilities:
+  - What it genuinely demonstrates
+
+limitations:
+  - What it fakes or leaves out

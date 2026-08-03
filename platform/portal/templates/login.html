@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Sign in · {{ config.name }}{% endblock %}
+{% block main %}
+  <section class="narrow">
+    <h2>Pick a persona</h2>
+    <p class="muted">
+      There is no password and nothing is verified. The portal asserts this
+      identity and its directory groups to every project; each project maps
+      those groups to its own roles.
+    </p>
+    <form method="post" action="/login" class="persona-list">
+      <input type="hidden" name="rd" value="{{ rd }}" />
+      {% for principal in config.principals %}
+        <button class="persona" name="email" value="{{ principal.email }}">
+          <strong>{{ principal.display_name }}</strong>
+          <span class="muted">{{ principal.email }}</span>
+          <span class="groups">
+            {% for group in principal.groups %}<span class="pill">{{ group }}</span>{% else %}
+              <span class="pill muted">no groups</span>
+            {% endfor %}
+          </span>
+        </button>
+      {% endfor %}
+    </form>
+  </section>
+{% endblock %}

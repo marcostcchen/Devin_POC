@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block main %}
+  <section>
+    <div class="section-head">
+      <h2>Projects</h2>
+      <span class="muted">{{ config.projects | length }} deployed on {{ config.domain }}</span>
+    </div>
+    <p class="muted">
+      Each card is a separate repository, built into its own image and running in
+      its own namespace. The platform routes to it, signs you in, and nothing else.
+    </p>
+    <div class="grid">
+      {% for card in cards %}
+        {% set project = card.project %}
+        <article class="card">
+          <div class="card-head">
+            <h3>{{ project.name }}</h3>
+            <span class="pill">{{ project.stage }}</span>
+          </div>
+          <p>{{ project.summary }}</p>
+          <dl class="meta">
+            <div><dt>Owner</dt><dd>{{ project.owner }}</dd></div>
+            <div><dt>Namespace</dt><dd><code>{{ project.namespace }}</code></dd></div>
+            <div>
+              <dt>Your role</dt>
+              <dd>
+                {% if card.role %}<span class="pill role">{{ card.role }}</span>
+                {% else %}<span class="muted">sign in to see</span>{% endif %}
+              </dd>
+            </div>
+          </dl>
+          <details>
+            <summary>What it demonstrates, and what it fakes</summary>
+            <ul class="ok">
+              {% for item in project.capabilities %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+            <ul class="no">
+              {% for item in project.limitations %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          </details>
+          <a class="button primary" href="{{ project.url }}">Open</a>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
+    <h2>What this environment is for</h2>
+    <div class="guardrails">
+      <div>
+        <h3 class="ok">Possible here</h3>
+        <ul>
+          {% for item in config.guardrails.allowed %}
+            <li><strong>{{ item.title }}</strong> — {{ item.detail }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h3 class="no">Not possible here</h3>
+        <ul>
+          {% for item in config.guardrails.not_allowed %}
+            <li>
+              <strong>{{ item.title }}</strong> — {{ item.detail }}
+              {% if item.instead %}<em>Instead: {{ item.instead }}</em>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </section>
+{% endblock %}

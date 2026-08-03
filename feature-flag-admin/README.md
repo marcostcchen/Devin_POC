@@ -1,34 +1,37 @@
 # Feature Flag Admin (POC)
 
-Minimal internal tool for toggling features without a deploy.
-FastAPI + SQLite backend, React (Vite + TypeScript) frontend.
+Minimal internal tool for toggling features without a deploy. FastAPI + SQLite.
+
+> The React client (`web/`) is not currently part of this repository, so `/`
+> answers 503 and the API is the whole app. Everything below the API section
+> describes the panel it was written for.
 
 ## Run
 
 ```bash
 cd feature-flag-admin
-./run.sh          # venv + pip install, npm install + vite build, uvicorn on :8000
+./run.sh          # venv + pip install, uvicorn on :8000
 ```
 
-Then open http://localhost:8000. The DB (`flags.db`) is created and seeded with
-three example flags on first start; delete it to reset. `PORT=9000 ./run.sh` to
-change the port.
-
-### Under the POC platform
-
-This app is also a platform prototype ([`poc.yaml`](poc.yaml)): start it from the
-[platform console](../poc-platform/) and it is served at
-`/apps/feature-flag-admin/`, the persona selected there becomes the acting user,
-and `flags.db` moves to the platform's disposable state directory. Standalone,
-nothing changes — the "Acting as" dropdown and the local database come back.
-
-For frontend work, run the API and the Vite dev server side by side — the dev
-server proxies `/api` to :8000 and gives you hot reload:
+Or as the container the platform deploys:
 
 ```bash
-./.venv/bin/uvicorn app.main:app --reload   # terminal 1
-cd web && npm run dev                       # terminal 2, http://localhost:5173
+docker build -t poc/feature-flag-admin:0.1.0 .
+docker run --rm -p 8000:8000 poc/feature-flag-admin:0.1.0
 ```
+
+The DB (`flags.db`, or `$DATA_DIR/flags.db`) is created and seeded with three
+example flags on first start; delete it to reset. `PORT=9000 ./run.sh` to change
+the port.
+
+### On the POC platform
+
+Deployed by [`platform/projects/feature-flag-admin.yaml`](../platform/projects/feature-flag-admin.yaml)
+at its own hostname. The platform sets `AUTH_MODE=proxy-headers`, so the acting
+user comes from the `X-Auth-Request-*` headers the ingress injects and
+`AUTH_GROUP_ROLES` decides whether that user is an `admin` or a `viewer`.
+Standalone, nothing changes here — the local roster and the `X-User` header come
+back. There is no platform code in this repository.
 
 ## What it does
 
@@ -44,8 +47,9 @@ cd web && npm run dev                       # terminal 2, http://localhost:5173
   reason. Bucketing is `sha256(flag:user_id) % 100`, so a user's assignment is sticky
   across evaluations and independent per flag. The *Evaluate* panel exercises this.
 
-There is no real auth: the client sends the selected identity in an `X-User` header,
-which the server trusts. That is intentional for this POC.
+There is no real auth: standalone, the client sends the selected identity in an
+`X-User` header and the server trusts it; behind a proxy it trusts the proxy's
+headers instead. That is intentional for this POC.
 
 ## The panel
 
@@ -61,8 +65,8 @@ The toolbar filters by name/description and by state, and reveals the create for
 ```
 app/
   main.py          FastAPI app: routers, error handling, serves web/dist
-  config.py        DB path, static paths, the mocked user roster
-  auth.py          Actor + X-User dependency, admin check
+  config.py        DB path, static paths, roles, group mapping, the local roster
+  auth.py          Actor resolution: proxy headers or the local roster, admin check
   models.py        Pydantic request/response schemas
   db.py            SQLite schema and connection handling
   repositories.py  All SQL for flags and audit entries
@@ -70,15 +74,8 @@ app/
   targeting.py     Pure evaluation: bucketing, team and rollout rules
   routers/         One module per resource (flags, audit, evaluation, identity)
   seed.py          Example flags for an empty database
-web/src/
-  api.ts           Typed fetch client (adds the X-User header)
-  types.ts         Mirrors the pydantic schemas
-  format.ts        Display helpers (timestamp formatting)
-  index.css        Design tokens and layout
-  hooks/           useAdminPanel: identity, flags, activity, error state
-  components/      IdentityBar, StatsBar, ErrorBanner, FlagTable, FlagRow,
-                   NewFlagForm, AuditList, EvaluatePanel
-tests/             API smoke tests + unit tests for the targeting logic
+tests/             API smoke tests, identity mapping, targeting unit tests
+Dockerfile         Non-root, read-only root filesystem, $PORT, $DATA_DIR
 ```
 
 ## API
@@ -99,8 +96,8 @@ Interactive docs at http://localhost:8000/docs.
 ## Tests
 
 ```bash
-./.venv/bin/python -m pytest tests -q     # API smoke tests + targeting unit tests
-(cd web && npm run typecheck)             # TypeScript
+python3 -m venv .venv && ./.venv/bin/pip install -r requirements-dev.txt
+./.venv/bin/python -m pytest tests -q
 ```
 
 ## What I'd build next

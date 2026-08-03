@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.config import PLATFORM_BASE_PATH, PLATFORM_MANAGED, WEB_DIST_DIR
+from app.config import PROXY_AUTH, WEB_DIST_DIR
 from app.db import init_db
 from app.errors import DomainError
 from app.routers import audit, evaluation, flags, identity
@@ -28,9 +28,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-# `root_path` only affects generated links (docs, OpenAPI): the platform gateway
-# strips its `/apps/feature-flag-admin` prefix before the request reaches us.
-app = FastAPI(title="Feature Flag Admin", lifespan=lifespan, root_path=PLATFORM_BASE_PATH)
+app = FastAPI(title="Feature Flag Admin", lifespan=lifespan)
 
 for module in (identity, flags, audit, evaluation):
     app.include_router(module.router)
@@ -44,11 +42,11 @@ async def domain_error_handler(_: Request, exc: DomainError) -> JSONResponse:
 
 @app.get("/healthz", include_in_schema=False)
 def healthz() -> dict:
-    """Readiness probe the POC platform polls before routing traffic here."""
+    """Readiness probe, polled by whatever is running the app."""
     return {
         "status": "ok",
         "app": "feature-flag-admin",
-        "platform_managed": PLATFORM_MANAGED,
+        "proxy_auth": PROXY_AUTH,
         "frontend_built": os.path.exists(INDEX_FILE),
     }
 
