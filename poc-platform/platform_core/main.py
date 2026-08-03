@@ -165,6 +165,7 @@ def reload_registry() -> dict[str, Any]:
 # Reading order in the console; anything else follows, alphabetically.
 DOC_ORDER = [
     "poc-environment",
+    "poc-architecture",
     "platform-contract",
     "target-architecture",
     "roadmap",

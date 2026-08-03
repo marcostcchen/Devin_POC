@@ -30,6 +30,7 @@ the output.
 console.
 
 - [POC environment: possible vs not possible](docs/poc-environment.md) — read this first.
+- [Current POC architecture](docs/poc-architecture.md) — one diagram of what runs today.
 - [The platform contract](docs/platform-contract.md) — what an app must do to be hosted.
 - [Target architecture](docs/target-architecture.md) — the platform this POC rehearses,
   and what it does and does not cover.

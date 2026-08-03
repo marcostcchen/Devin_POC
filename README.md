@@ -22,6 +22,8 @@ served in the console.
 
 - **[What is possible in this POC environment, and what is not](poc-platform/docs/poc-environment.md)** —
   the boundary of what any demo here can tell you.
+- [Current POC architecture](poc-platform/docs/poc-architecture.md) — one diagram
+  of what actually runs today, and what is not there.
 - [The platform contract](poc-platform/docs/platform-contract.md) — what a prototype
   must do to be hosted, and how to add a new one.
 - [Target architecture](poc-platform/docs/target-architecture.md) — the in-house

@@ -8,6 +8,9 @@ Every page here is also served in the platform console's **Docs** panel.
   environment and what is not.** Read this before drawing a conclusion from
   anything demonstrated here. The machine-checkable half is enforced from
   [`../policy.yaml`](../policy.yaml).
+- [poc-architecture.md](poc-architecture.md) — a diagram of what actually runs
+  today: gateway, mocked SSO, policy, supervisor, the three prototypes and their
+  per-app SQLite, and everything that is not there.
 
 ## Building on the platform
 
