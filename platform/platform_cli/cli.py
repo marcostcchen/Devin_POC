@@ -268,7 +268,10 @@ def cmd_new(args: argparse.Namespace, platform: Platform, policy: Policy) -> int
     if destination.exists():
         raise Failure(f"{destination} already exists")
     text = (PROJECTS_DIR / "_template.yaml").read_text(encoding="utf-8")
-    destination.write_text(text.replace("my-project", args.id), encoding="utf-8")
+    # The template's header addresses whoever is copying it by hand; a scaffolded
+    # file starts at the schema instead.
+    body = text[text.index("schema_version:"):]
+    destination.write_text(body.replace("my-project", args.id), encoding="utf-8")
     print(f"created {destination}\nedit it, then: ./platformctl validate && ./platformctl deploy {args.id}")
     return 0
 

@@ -51,6 +51,9 @@ persona and follow the links: <http://kyc.poc.localhost:8080>,
 ./platformctl delete kyc-review-queue      # removes the namespace with it
 ```
 
+The full command reference, the day-2 commands and the failure modes are in
+[docs/operations.md](docs/operations.md).
+
 ## Deploy it to AKS
 
 ```bash
@@ -82,12 +85,18 @@ creates gets a resource quota, a limit range, Pod Security Admission
 
 See [docs/architecture.md](docs/architecture.md) for how that fits together, and
 [docs/poc-environment.md](docs/poc-environment.md) for what conclusions this
-environment does and does not support.
+environment does and does not support. [docs/](docs/) indexes the rest.
 
 ## Tests
 
 ```bash
 python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
-./.venv/bin/python -m pytest tests          # policy, rendering, and the chart itself
-cd portal && ./.venv/bin/python -m pytest tests
+./.venv/bin/python -m pytest tests    # policy, rendering, and the chart itself
+./platformctl validate                # the real projects, against policy.yaml
+
+cd portal && python3 -m venv .venv && ./.venv/bin/pip install -r requirements-dev.txt
+./.venv/bin/python -m pytest tests    # the auth subrequest and the catalog
 ```
+
+The chart tests shell out to `helm template`, so helm has to be on `$PATH`; no
+cluster is needed for any of them.

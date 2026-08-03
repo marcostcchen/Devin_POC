@@ -42,6 +42,9 @@ answer a health path, write only to `$DATA_DIR`, and read identity from
   and AKS stay identical, and how far the isolation goes.
 - [The project contract](platform/docs/project-contract.md) — what a prototype
   must do to be deployable, and how to add a new one.
+- [Operating the platform](platform/docs/operations.md) — the `platformctl`
+  reference, the AKS differences, and what to check when something is not
+  serving.
 - [Target architecture](platform/docs/target-architecture.md) — the in-house
   platform this POC rehearses, mapped box by box against what is actually here.
 - [Next-step proposals](platform/docs/roadmap.md) — the increments that would

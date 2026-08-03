@@ -51,6 +51,28 @@ those onto the upstream request (overwriting anything the browser sent), and the
 project maps groups to its own roles. Unauthenticated requests are redirected to
 the portal's sign-in page.
 
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant N as ingress-nginx
+    participant P as Portal (/auth)
+    participant A as Project pod
+
+    B->>N: GET /api/cases  (X-Auth-Request-Email: attacker@…)
+    N->>P: auth subrequest, forwarding cookies only
+    alt no session cookie
+        P-->>N: 401
+        N-->>B: 302 portal /login?rd=…
+    else signed in
+        P-->>N: 202 + X-Auth-Request-Email/User/Groups
+        N->>A: GET /api/cases with the portal's headers (spoofed ones replaced)
+        A-->>N: role = group_roles[first held group] or default_role
+    end
+```
+
+The session is a cookie on the parent domain, so one sign-in covers every
+project subdomain and a browser that never signed in inherits nothing.
+
 ## Local and AKS are the same deployment
 
 | | Local (kind) | AKS |
