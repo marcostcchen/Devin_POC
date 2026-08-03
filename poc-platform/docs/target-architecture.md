@@ -1,6 +1,7 @@
 # Target architecture, and how this POC maps onto it
 
-The in-house platform this prototype is a rehearsal for:
+The in-house platform this prototype is a rehearsal for — for the current state
+it is being compared against, see [poc-architecture.md](poc-architecture.md):
 
 ![Target architecture: an in-house Next.js/TypeScript platform with edge, auth, policy engine and audit log over a shared toolkit, thin apps, a platform data and integration layer, and platform ops](images/target-architecture.png)
 
