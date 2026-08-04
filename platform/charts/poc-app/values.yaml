@@ -1,69 +1,26 @@
-# Defaults for the generic project chart. `platformctl` renders every value
-# below from platform.yaml + projects/<id>.yaml; the defaults exist so that
-# `helm template charts/poc-app` on its own still produces a valid release.
+# Defaults for the generic project chart. `platformctl` fills these in from
+# projects/<id>.yaml; the defaults exist so `helm template charts/poc-app` on
+# its own still produces a valid release.
 
-project:
-  id: my-project
-  name: My Project
-  summary: ""
-  owner: unknown
-  stage: poc
+name: my-project
+image: poc/my-project:0.1.0
+replicas: 1
 
-namespace: poc-my-project
+# The container listens on $PORT and answers this path when it is ready.
+port: 8000
+healthPath: /healthz
 
-image:
-  repository: poc/my-project
-  tag: "0.1.0"
-  pullPolicy: IfNotPresent
+# Extra environment variables for the container, on top of PORT and DATA_DIR.
+env: {}
 
-runtime:
-  port: 8000
-  healthPath: /healthz
-  replicas: 1
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-  # Extra configuration for the container, on top of the contract variables the
-  # chart always sets (PORT, DATA_DIR, AUTH_*).
-  env: {}
+host: my-project.poc.localhost
+ingressClassName: nginx
 
-route:
-  host: my-project.poc.localhost
-  ingressClassName: nginx
-  tls:
-    enabled: false
-    clusterIssuer: ""
-
-# Identity is asserted by the platform's auth proxy and mapped to a project role
-# by the project itself, from the groups below.
-access:
-  defaultRole: viewer
-  # "group:role,group:role" — the format the projects parse.
-  groupRoles: ""
-  roles: ""
-
-auth:
-  # Ingress auth subrequest target and the sign-in page a 401 redirects to.
-  url: http://poc-portal.poc-platform.svc.cluster.local/auth
-  signinUrl: ""
-  responseHeaders: X-Auth-Request-Email,X-Auth-Request-User,X-Auth-Request-Groups
-
-data:
-  classification: synthetic
-  persistence:
-    # false: an emptyDir that dies with the pod. true: a PersistentVolumeClaim.
-    enabled: false
-    size: 1Gi
-    storageClass: ""
-
-# Namespace-level ceiling. Deliberately small: a POC that needs more than this
-# is not a POC.
-quota:
-  pods: 6
-  cpuLimit: "2"
-  memoryLimit: 2Gi
-  storageClaims: 2
+# Small on purpose: this is a prototype, not a production workload.
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

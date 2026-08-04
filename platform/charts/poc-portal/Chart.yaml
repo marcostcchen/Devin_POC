@@ -1,8 +1,0 @@
-apiVersion: v2
-name: poc-portal
-description: >-
-  The platform's own two components, which are one process: the project catalog
-  and the mocked SSO every project's ingress calls before it serves a request.
-type: application
-version: 0.1.0
-appVersion: "0.1.0"

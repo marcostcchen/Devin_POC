@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.auth import PROXY_AUTH, ROLES, USERS, Actor, current_actor
+from app.auth import ROLES, USERS, Actor, current_actor
 from app.config import APPROVAL_THRESHOLD_AMOUNT, SEED_REQUEST_COUNT
 from app.db import get_conn, init_db
 from app.models import (
@@ -105,7 +105,7 @@ def record(
 @app.get("/healthz")
 def healthz() -> dict:
     """Readiness probe, polled by whatever is running the app."""
-    return {"status": "ok", "app": "refunds-dashboard", "proxy_auth": PROXY_AUTH}
+    return {"status": "ok", "app": "refunds-dashboard"}
 
 
 @app.get("/api/me")
@@ -113,11 +113,8 @@ def me(actor: Actor = Depends(current_actor)) -> dict:
     return {
         "email": actor.email,
         "role": actor.role,
-        "display_name": actor.display_name,
-        # Behind a proxy the identity is not ours to change, so the local
-        # switcher has nothing to offer.
-        "users": {} if PROXY_AUTH else USERS,
-        "proxy_auth": PROXY_AUTH,
+        # The roster the UI's switcher renders.
+        "users": USERS,
     }
 
 

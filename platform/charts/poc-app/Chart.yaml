@@ -1,9 +1,8 @@
 apiVersion: v2
 name: poc-app
 description: >-
-  The one chart every project on the POC platform is deployed with: a namespace
-  with a quota and a default-deny network policy, a deployment, a service and an
-  authenticated ingress. Projects do not ship charts of their own.
+  The one chart every project on the POC platform is deployed with: a deployment,
+  a service and an ingress. Projects do not ship charts of their own.
 type: application
 version: 0.1.0
 appVersion: "0.1.0"

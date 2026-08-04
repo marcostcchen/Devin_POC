@@ -1,50 +1,17 @@
-# Cluster-wide settings. Everything project-specific lives in projects/<id>.yaml.
-schema_version: 2
+# The whole platform configuration. Everything else lives in projects/<id>.yaml.
 
-platform:
-  name: POC Platform
-  # Every project is published at https://<route.subdomain>.<domain>.
-  # Locally this is poc.localhost, which browsers resolve to 127.0.0.1 on their own.
-  domain: poc.localhost
-  # Namespace of a project: <namespace_prefix><project id>.
-  namespace_prefix: poc-
-  # Namespace of the platform's own components (portal and mocked SSO).
-  system_namespace: poc-platform
-  # Prefixed to every image repository. Empty locally, where images are loaded
-  # straight into the cluster; on AKS this is the ACR login server.
-  registry: ""
-  ingress_class: nginx
-  # Port the cluster's ingress is reached on from a browser. kind publishes it
-  # on 8080; on AKS this is 443 and can be left out.
-  public_port: 8080
-  # TLS is issued by cert-manager on AKS; the local cluster serves plain HTTP.
-  tls:
-    enabled: false
-    cluster_issuer: letsencrypt-internal
+# Every project is published at http://<host>.<domain>. Locally this is
+# poc.localhost, which browsers resolve to 127.0.0.1 on their own.
+domain: poc.localhost
 
-# The resource envelope a project can ask for by name. A project that needs
-# something outside this list is not a POC any more.
-sizes:
-  small:
-    requests: { cpu: 50m, memory: 128Mi }
-    limits: { cpu: 500m, memory: 512Mi }
-  medium:
-    requests: { cpu: 200m, memory: 256Mi }
-    limits: { cpu: "1", memory: 1Gi }
+# A project runs in the namespace <namespace_prefix><id>.
+namespace_prefix: poc-
 
-# The mocked directory. The portal signs you in as one of these and asserts the
-# groups below to every project; each project maps groups to its own roles.
-# In the target deployment this block is Entra ID and the portal is oauth2-proxy.
-principals:
-  - email: ada@example.com
-    display_name: Ada Lovelace
-    groups: [platform-admins, feature-flag-admins, kyc-seniors, refunds-finance]
-  - email: grace@example.com
-    display_name: Grace Hopper
-    groups: [feature-flag-admins, kyc-analysts, refunds-agents]
-  - email: linus@example.com
-    display_name: Linus Torvalds
-    groups: [kyc-analysts, refunds-agents]
-  - email: mira@example.com
-    display_name: Mira Osei
-    groups: []
+# Prefixed to every image name. Empty locally, where images are loaded straight
+# into the kind cluster; on AKS this is the ACR login server.
+registry: ""
+
+ingress_class: nginx
+
+# Port the ingress is reached on from a browser: 8080 on kind, 80 on AKS.
+public_port: 8080

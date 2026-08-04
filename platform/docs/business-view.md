@@ -7,16 +7,16 @@
 
 ## Executive summary
 
-The POC Platform is a controlled environment for building, demonstrating, and evaluating internal business applications before committing to full production development.
+The POC Platform is a shared place to deploy and demonstrate internal business applications before committing to full production development.
 
-It brings multiple prototypes into one place with:
+It gives each prototype:
 
-- One catalog, and one address per application under a shared domain
-- One simulated user identity across all applications
-- Role-based experiences for different business users
-- Explicit rules about permitted data and capabilities
-- Repeatable demo data and resettable scenarios
-- A clear record of what each prototype proves and what it does not
+- Its own address under a shared domain
+- Its own isolated space in one shared cluster
+- The same deployment path locally and in the cloud
+- Repeatable demo data for stakeholder walkthroughs
+
+Adding an application takes one short configuration file. Nothing in the platform changes.
 
 Three applications currently demonstrate the model:
 
@@ -24,9 +24,9 @@ Three applications currently demonstrate the model:
 2. **KYC Review Queue** - supports compliance case triage, escalation, decisions, and audit history.
 3. **Refunds Dashboard** - supports refund review with an approval threshold, mocked payouts, and audit history.
 
-The platform already proves that unrelated applications can be presented through a consistent, governed experience. It also makes business workflows, roles, approval rules, and audit requirements easier to review with stakeholders.
+The platform proves that unrelated applications, owned by different teams, can be deployed and hosted side by side at low cost. It makes business workflows, roles, approval rules, and audit requirements easier to review with stakeholders.
 
-It does **not** yet prove production security, scale, resilience, or the expected cost savings from reusable application components. Those are the next questions to validate.
+It deliberately contains **no** sign-in, access control, or governance enforcement, so it proves nothing about production security, scale, or resilience. Those are separate questions to validate.
 
 ## The business problem
 
@@ -43,36 +43,17 @@ The POC Platform addresses the evaluation stage. It provides a common environmen
 
 ## What the platform is
 
-In business terms, the platform is a **managed showroom and test environment for internal digital workflows**.
+In business terms, the platform is a **shared host for internal workflow prototypes**.
 
-Each prototype is registered with a small manifest that states:
+Each prototype is registered with a short configuration file stating its name, its container image, and the address it should answer on. The platform gives it an isolated space in the cluster and publishes it. Removing an application removes that space and everything in it.
 
-- Its purpose and owner
-- The roles it supports
-- What it genuinely demonstrates
-- What is simulated or missing
-- What kind of data it uses
-- How much of the shared environment it may consume
-
-The platform checks these declarations before an application can be deployed. For example, a prototype cannot claim to be production, use a production-stage classification, or quietly connect to an unsupported shared database.
-
-This turns governance from a document people may overlook into a rule the environment applies automatically.
+The deliberate design choice is that a prototype owes the platform almost nothing: a container that starts and reports that it is healthy. Teams keep their own repositories, their own technology choices, and their own release timing.
 
 ## What a stakeholder experiences
 
-A stakeholder opens one platform portal and sees every available prototype as an application card. From there, the stakeholder can:
+A stakeholder opens an application directly at its own address and walks through the workflow. Within each application they can switch between business roles - for example a support agent and a finance approver - to see how the experience and the permitted actions change.
 
-- Read what an application is intended to demonstrate
-- Read its known limitations before drawing conclusions
-- Select a business persona once, for every application
-- See which role that persona holds in each application
-- Open the workflow at its own address, without signing in again
-- Test how the experience changes by role
-- Ask the delivery team to reset an application for a repeatable demonstration
-
-The selected persona is mapped to the role that each application understands. For example, the same person can appear as a senior reviewer in the KYC application and an administrator in the feature flag application.
-
-This makes cross-application demonstrations more coherent while preserving the role model of each business domain.
+That role choice is a demonstration aid, not a security control. There is no sign-in, and the applications accept whichever role the reviewer selects.
 
 ## Current business use cases
 
@@ -144,17 +125,13 @@ This makes cross-application demonstrations more coherent while preserving the r
 
 Business users can walk through realistic screens and decisions using seeded data. This helps teams validate terminology, queue design, approval rules, role boundaries, and required evidence before production development.
 
-### More transparent decisions
-
-Every prototype must state its capabilities and limitations. Stakeholders can distinguish between a workflow that has been demonstrated and a production capability that has not yet been built.
-
-### Consistent governance
-
-The platform enforces basic POC rules: synthetic or anonymized sample data, disposable storage, simulated identity, and an explicit limitations list. A non-compliant prototype cannot be deployed at all.
-
 ### Lower cost of experimentation
 
-A new prototype can be registered without changing the platform itself, provided it follows the platform contract. This creates a repeatable path for testing new internal application ideas.
+A new prototype can be registered without changing the platform itself, provided it ships a container that follows a two-line contract. This creates a repeatable path for testing new internal application ideas.
+
+### No lock-in for the teams
+
+Each prototype remains independently runnable on a laptop and independently deployable. A team can join or leave the platform without rewriting its application.
 
 ### Better cross-functional review
 
@@ -164,18 +141,18 @@ Product, operations, compliance, security, and engineering can review the same w
 
 The current POC provides evidence that:
 
-- Multiple applications built with different technologies can be hosted behind one platform experience.
-- One persona selection can drive appropriate roles across applications.
-- Role-based workflow behavior can be reviewed with business stakeholders.
-- Environment rules can be enforced automatically rather than documented only in guidance.
-- Prototypes can retain their ability to run independently.
-- Teams can demonstrate business rules, state changes, and local audit history with repeatable data.
+- Multiple independently owned applications can be hosted side by side in one shared cluster.
+- Onboarding an application is a configuration change, not a platform change.
+- The same deployment works locally and in the cloud, so a demonstration environment is cheap to recreate.
+- Prototypes retain their ability to run independently.
+- Teams can demonstrate business rules, role differences, state changes, and local audit history with repeatable data.
 
 ## What it does not prove
 
 The current POC should not be used as evidence of:
 
-- Production authentication or security
+- Any authentication or access control whatsoever - it has none
+- Isolation strong enough to separate sensitive workloads
 - Protection of personal, regulated, payment, or customer data
 - Reliable integration with external systems
 - Production performance, concurrency, or scale
@@ -184,7 +161,7 @@ The current POC should not be used as evidence of:
 - Multi-user departmental operation
 - A proven reduction in the cost of building each additional application
 
-The environment uses simulated identity, synthetic data, local disposable databases, and mocked external actions. It is a decision-support environment, not a lightweight production environment.
+The environment has no sign-in, uses synthetic data and local disposable databases, and mocks every external action. It is a decision-support environment, not a lightweight production environment.
 
 ## Strategic opportunity
 
@@ -204,13 +181,13 @@ That hypothesis is **not yet proven**. The applications independently implement 
 
 ## Recommended next steps
 
-### Phase 1: Strengthen trust in the evaluation environment
+### Phase 1: Add the controls a shared environment needs
 
-1. Add a central access-policy definition so common permissions can be reviewed and enforced consistently.
-2. Add a central append-only audit record across all applications.
+1. Add enterprise sign-in at the platform edge, so applications no longer trust a self-declared user.
+2. Add isolation between applications and limits on what each may consume.
 3. Add continuous integration checks so tests and quality checks run automatically for every change.
 
-**Business question answered:** Can the platform provide consistent control and evidence across multiple workflows?
+**Business question answered:** Can the platform host workloads that matter, with consistent control and evidence?
 
 ### Phase 2: Test real integration behavior
 
@@ -250,7 +227,7 @@ The next stage should be evaluated with measurable outcomes rather than platform
 | Delivery efficiency | Effort to deliver application four compared with the current applications |
 | Control consistency | Percentage of applications using central policy and audit capabilities |
 | Quality | Automated test pass rate and escaped defects in demonstrated workflows |
-| Governance | Number of non-compliant manifests blocked before a demonstration |
+| Onboarding | Effort to deploy a new application onto the platform |
 | Graduation | Time and effort required to replace simulated capabilities for a selected application |
 
 Targets should be agreed before the next experiment so the outcome can support an investment decision.
@@ -259,7 +236,7 @@ Targets should be agreed before the next experiment so the outcome can support a
 
 | Risk | Business impact | Response |
 | --- | --- | --- |
-| A polished POC is mistaken for production | Unsafe operational or data-use decisions | Keep limitations visible and enforce POC-only policy in code |
+| A polished POC is mistaken for production | Unsafe operational or data-use decisions | State the missing controls in every demonstration; the environment has no sign-in and must stay on synthetic data |
 | Shared tooling is built before reuse is proven | Platform investment without delivery savings | Test one shared component set and one new application first |
 | Different application technologies limit reuse | Duplicate development and inconsistent controls | Make technology convergence an explicit architecture decision |
 | Central controls become too generic | Business-specific rules are weakened | Centralize common policy while retaining justified domain rules |
@@ -270,7 +247,7 @@ Targets should be agreed before the next experiment so the outcome can support a
 
 The recommended decision is to fund a **measured validation phase**, not a full production platform commitment.
 
-The validation phase should deliver central policy, central audit, automated quality checks, and one evidence-based reuse experiment. Sponsors should then review:
+The validation phase should deliver real sign-in, isolation between applications, automated quality checks, and one evidence-based reuse experiment. Sponsors should then review:
 
 - Whether business users validated the workflows more quickly
 - Whether controls became more consistent across applications
@@ -282,14 +259,14 @@ This creates a controlled investment path: preserve the value already demonstrat
 
 ## Short talk track
 
-> This platform gives us one controlled place to test internal application ideas with business users. It lets us demonstrate real workflow rules, role differences, and audit needs using synthetic data, while clearly showing what is still simulated. Today it proves that we can govern and present multiple prototypes consistently. The next step is to test whether shared controls and reusable components genuinely make the next application faster and cheaper to deliver. It is a disciplined way to learn before making a larger production investment.
+> This platform gives us one place to deploy and test internal application ideas with business users. Each team keeps its own application; the platform gives it a space in a shared cluster and an address, and onboarding is one small configuration file. It lets us demonstrate real workflow rules, role differences, and audit needs using synthetic data. It has no sign-in and no security controls yet, so it is strictly for evaluation. The next step is to add those controls and to test whether shared components genuinely make the next application faster and cheaper to deliver.
 
 ## Glossary
 
 | Term | Plain-language meaning |
 | --- | --- |
 | POC | A proof of concept used to test an idea, not a production service |
-| Persona | A simulated user representing a business role |
+| Namespace | An isolated space inside a shared cluster, one per application |
 | Role-based access | Different actions and information are available to different job roles |
 | Feature flag | A control that turns a software feature on or off without a new release |
 | KYC | Know Your Customer checks used to assess identity and compliance risk |

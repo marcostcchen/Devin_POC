@@ -1,121 +1,55 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "poc-app.name" . }}
-  namespace: {{ .Values.namespace }}
+  name: {{ .Values.name }}
   labels:
-    {{- include "poc-app.labels" . | nindent 4 }}
+    app: {{ .Values.name }}
 spec:
-  replicas: {{ .Values.runtime.replicas }}
+  replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
-      {{- include "poc-app.selectorLabels" . | nindent 6 }}
+      app: {{ .Values.name }}
   template:
     metadata:
       labels:
-        {{- include "poc-app.labels" . | nindent 8 }}
+        app: {{ .Values.name }}
     spec:
-      serviceAccountName: {{ include "poc-app.name" . }}
-      automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: app
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: [ALL]
+          image: {{ .Values.image | quote }}
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: {{ .Values.runtime.port }}
-          # The whole runtime contract. A project reads these five variables and
+              containerPort: {{ .Values.port }}
+          # The whole runtime contract: a project reads these two variables and
           # knows nothing else about the platform.
           env:
             - name: PORT
-              value: "{{ .Values.runtime.port }}"
+              value: {{ .Values.port | quote }}
             - name: DATA_DIR
               value: /data
-            - name: AUTH_MODE
-              value: proxy-headers
-            - name: AUTH_DEFAULT_ROLE
-              value: {{ .Values.access.defaultRole | quote }}
-            - name: AUTH_GROUP_ROLES
-              value: {{ .Values.access.groupRoles | quote }}
-            {{- range $name, $value := .Values.runtime.env }}
+            {{- range $name, $value := .Values.env }}
             - name: {{ $name }}
               value: {{ $value | quote }}
             {{- end }}
-          volumeMounts:
-            - name: data
-              mountPath: /data
-            - name: tmp
-              mountPath: /tmp
-          startupProbe:
-            httpGet:
-              path: {{ .Values.runtime.healthPath }}
-              port: http
-            periodSeconds: 3
-            failureThreshold: 40
           readinessProbe:
             httpGet:
-              path: {{ .Values.runtime.healthPath }}
+              path: {{ .Values.healthPath }}
               port: http
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.runtime.healthPath }}
-              port: http
-            periodSeconds: 20
+            periodSeconds: 5
           resources:
-            {{- toYaml .Values.runtime.resources | nindent 12 }}
-      volumes:
-        - name: data
-          {{- if .Values.data.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "poc-app.name" . }}-data
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
-        - name: tmp
-          emptyDir: {}
+            {{- toYaml .Values.resources | nindent 12 }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "poc-app.name" . }}
-  namespace: {{ .Values.namespace }}
+  name: {{ .Values.name }}
   labels:
-    {{- include "poc-app.labels" . | nindent 4 }}
+    app: {{ .Values.name }}
 spec:
   selector:
-    {{- include "poc-app.selectorLabels" . | nindent 4 }}
+    app: {{ .Values.name }}
   ports:
     - name: http
       port: 80
       targetPort: http
-{{- if .Values.data.persistence.enabled }}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ include "poc-app.name" . }}-data
-  namespace: {{ .Values.namespace }}
-  labels:
-    {{- include "poc-app.labels" . | nindent 4 }}
-spec:
-  accessModes: [ReadWriteOnce]
-  resources:
-    requests:
-      storage: {{ .Values.data.persistence.size }}
-  {{- with .Values.data.persistence.storageClass }}
-  storageClassName: {{ . }}
-  {{- end }}
-{{- end }}
