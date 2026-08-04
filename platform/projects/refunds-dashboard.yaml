@@ -39,7 +39,7 @@ data:
 capabilities:
   - Refund queue with status and amount filters, and a summary dashboard
   - Approve/deny with a required reason, enforced server-side
-  - Amount threshold: only a finance approver can decide a large refund or pay one out
+  - "Amount threshold: only a finance approver can decide a large refund or pay one out"
   - Append-only audit trail per request and a global audit view
 
 limitations:

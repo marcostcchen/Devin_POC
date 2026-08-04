@@ -110,6 +110,13 @@ class Policy:
                     f"data.persistence {persistence} exceeds the {limits.get('max_storage_gi')}Gi ceiling"
                 )
 
+        for field in ("capabilities", "limitations"):
+            entries = project.raw.get(field) or []
+            # A stray unquoted colon turns a list item into a one-key dict, which
+            # then reaches the portal as a raw dict; insist on plain strings.
+            if not all(isinstance(entry, str) for entry in entries):
+                problems.append(f"{field} must be a list of strings")
+
         if len(project.raw.get("limitations") or []) < limits.get("min_limitations", 0):
             problems.append(
                 f"at least {limits.get('min_limitations')} limitations must be declared"

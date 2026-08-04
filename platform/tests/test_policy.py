@@ -53,6 +53,14 @@ def test_too_many_replicas_are_rejected(project_file, policy, platform):
     assert any("replicas" in problem for problem in problems)
 
 
+def test_a_capability_that_parsed_as_a_dict_is_rejected(project_file, policy, platform):
+    # An unquoted colon in the YAML makes the item a one-key dict, not a string.
+    problems = policy.violations(
+        project_file(capabilities=[{"Amount threshold": "finance only"}]), platform
+    )
+    assert any("capabilities must be a list of strings" in problem for problem in problems)
+
+
 def test_two_projects_cannot_share_a_hostname(project_file):
     one = project_file(id="one", route={"subdomain": "same"})
     two = project_file(id="two", route={"subdomain": "same"})
