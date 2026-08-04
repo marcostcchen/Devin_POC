@@ -1,55 +1,216 @@
-# Internal K8 Platform POC
+# Internal Application Platform POC
 
-Prototypes, and the Kubernetes platform that deploys them. Each prototype is an
-ordinary container in its own folder — it depends on its own stack and on
-nothing in `platform/`. The platform gives it a namespace and a hostname.
+A working proof of concept for evaluating whether three Microsoft Power Apps
+could become independently developed, in-house web applications deployed
+through a lightweight Kubernetes platform.
+
+This repository tests a narrow proposition: can engineering teams package
+internal tools as ordinary containers and operate them through one consistent
+deployment path? It is not an attempt to reproduce Power Apps as a general
+low-code product.
+
+## What is in this repository
+
+The POC contains three FastAPI applications and the platform that builds and
+deploys them:
+
+| Component | Purpose |
+| --- | --- |
+| [feature-flag-admin](feature-flag-admin/) | Feature CRUD, admin/viewer roles, percentage and team targeting, and audit history |
+| [kyc-review-queue](kyc-review-queue/) | KYC case triage, escalation, required decision reasons, analyst/senior roles, and audit history |
+| [refunds-dashboard](refunds-dashboard/) | Refund review, approval threshold, required reasons, finance roles, mocked payouts, and audit history |
+| [platform](platform/) | Local kind cluster, shared Helm chart, project configuration, `platformctl`, and prototype AKS infrastructure |
+
+Each application owns its code, container image, business rules, roles, and
+SQLite database. It does not import or depend on platform code.
+
+## Architecture
+
+The platform is a lightweight **Internal Developer Platform (IDP)** using a
+shared Kubernetes cluster and one namespace per application.
+
+```mermaid
+flowchart TB
+    users["Internal users"] --> ingress["Shared ingress-nginx<br/>One hostname per application"]
+
+    subgraph cluster["Kubernetes cluster"]
+        ingress
+
+        subgraph flagsns["poc-feature-flag-admin"]
+            flags["Deployment · Service · Pod"]
+        end
+
+        subgraph kycns["poc-kyc-review-queue"]
+            kyc["Deployment · Service · Pod"]
+        end
+
+        subgraph refundsns["poc-refunds-dashboard"]
+            refunds["Deployment · Service · Pod"]
+        end
+
+        ingress --> flags
+        ingress --> kyc
+        ingress --> refunds
+    end
+
+    projects["projects/<id>.yaml"] --> cli["platformctl"]
+    chart["Shared Helm chart"] --> cli
+    cli --> cluster
+```
+
+The applications share:
+
+- One Kubernetes cluster and its compute capacity
+- One ingress controller for hostname-based routing
+- One generic Helm chart that creates a Deployment, Service, and Ingress
+- One CLI for building, deploying, inspecting, and deleting applications
+- One runtime contract: `$PORT`, `$DATA_DIR`, and `GET /healthz`
+- Common CPU and memory defaults
+
+They do not share application processes, databases, role definitions, business
+rules, or release lifecycles. Namespaces provide organization and lifecycle
+isolation, but are not complete security boundaries by themselves.
+
+## How deployment works
+
+Each application has one file under [platform/projects](platform/projects/):
+
+```yaml
+id: feature-flag-admin
+repo: ../feature-flag-admin
+image: poc/feature-flag-admin:0.1.0
+host: flags
+```
+
+The flow is:
+
+```text
+Application folder --Docker--> container image
+Project YAML -------platformctl + Helm-------> Kubernetes resources
+Container image ------------------------------------> running Pod
+```
+
+`repo` identifies the Docker build context. `image` identifies what Kubernetes
+runs. `host` publishes the application through ingress. After the image is
+built, Kubernetes has no connection to the source folder.
+
+## Run locally
+
+### Prerequisites
+
+- Python 3
+- Docker
+- kind
+- kubectl
+- Helm
+
+Docker must be running. `platformctl` creates its Python virtual environment on
+first use.
+
+### Start the platform
 
 ```bash
 cd platform
-./platformctl bootstrap --target local   # kind cluster + ingress
-./platformctl build --load && ./platformctl deploy --wait
-# http://kyc.poc.localhost:8080, http://flags.poc.localhost:8080, http://refunds.poc.localhost:8080
+./platformctl bootstrap --target local
+./platformctl build --load
+./platformctl deploy --wait
 ```
 
-The same commands run against AKS; only `platform.yaml` differs.
+Open:
 
-| Folder | What it is |
-| --- | --- |
-| [`platform/`](platform/) | The platform: one generic Helm chart, one YAML file per project, `platformctl`, and the AKS Bicep |
-| [`feature-flag-admin/`](feature-flag-admin/) | Internal feature-flag admin panel: CRUD, audit log, RBAC, %/team targeting (FastAPI + SQLite) |
-| [`kyc-review-queue/`](kyc-review-queue/) | Compliance KYC review queue: case triage, decisions with required reason, audit trail, analyst/senior RBAC, escalation queue (FastAPI + SQLite) |
-| [`refunds-dashboard/`](refunds-dashboard/) | Refund review dashboard: queue and summary metrics, approve/deny with a required reason, a finance approval threshold, mocked payouts, audit trail (FastAPI + SQLite) |
+- <http://flags.poc.localhost:8080>
+- <http://kyc.poc.localhost:8080>
+- <http://refunds.poc.localhost:8080>
 
-## Adding a project
+`*.localhost` resolves to `127.0.0.1` automatically, so no hosts-file change is
+required.
+
+Useful operator commands:
 
 ```bash
-cd platform && ./platformctl new my-project   # then edit projects/my-project.yaml
-./platformctl deploy my-project
+./platformctl list
+./platformctl status
+./platformctl render feature-flag-admin
+kubectl logs -n poc-feature-flag-admin deployment/feature-flag-admin
 ```
 
-That is the whole onboarding: no platform code, no chart and no pipeline is
-touched. All a project has to do is listen on `$PORT`, answer `GET /healthz`,
-and write only under `$DATA_DIR`.
+## Add an application
 
-## Start here
+An application can use any language or framework. Its container must:
 
-- [Operations guide](platform/docs/operations-guide.md) — setup, daily commands,
-  new application onboarding, troubleshooting, and cleanup.
-- [In-house solution prototype](platform/docs/in-house-solution-prototype.md) —
-  what the POC shares, proves, leaves out, and proposes for production.
-- [Running multiple applications](platform/docs/running-multiple-applications.md)
-  — how Pods, Deployments, Services, Ingress, nodes, and namespaces work together.
-- [Current architecture](platform/docs/architecture.md) — what actually runs,
-  how local and AKS stay identical, and what the prototype leaves out.
-- [Target architecture](platform/docs/target-architecture.md) — the in-house
-  platform this POC rehearses, and the decisions it assumes.
-- [Gap analysis](platform/docs/gap-analysis.md) — the two, box by box: what is
-  missing, how big it is, and which differences are decisions rather than work.
-- [Migration plan](platform/docs/migration-plan.md) — phased, with a genuine
-  stop point after the reuse thesis is measured.
-- [Business overview](platform/docs/business-view.md) — all of it without the
-  Kubernetes vocabulary.
+1. Listen on `$PORT` and bind to `0.0.0.0`.
+2. Return a successful response from `GET /healthz`.
+3. Write runtime files only below `$DATA_DIR`.
+4. Provide a Dockerfile.
 
-Nothing in this repository is production software: there is no authentication,
-all data is synthetic, and every external integration stops at a mocked
-boundary.
+Create and edit its project configuration:
+
+```bash
+cd platform
+./platformctl new my-project
+$EDITOR projects/my-project.yaml
+```
+
+Then validate, build, and deploy it:
+
+```bash
+./platformctl render my-project
+./platformctl build my-project --load
+./platformctl deploy my-project --wait
+```
+
+Onboarding does not require a platform code change or a new Helm chart. See the
+[operations guide](platform/docs/operations-guide.md) for the complete workflow.
+
+## What this POC proves
+
+- Three unrelated applications can run side by side in one shared cluster.
+- Applications can be deployed, upgraded, inspected, and removed independently.
+- A small configuration file can onboard another containerized application.
+- The same Helm chart and project model can be rendered for local kind and AKS.
+- Applications remain portable because they depend only on a container contract.
+
+The AKS Bicep and deployment path are written but have not been exercised
+against a real Azure subscription.
+
+## What this POC does not prove
+
+This repository is not production software. It has:
+
+- No enterprise authentication; users are simulated with an unverified header
+- No central authorization, segregation of duties, or tamper-evident audit log
+- No durable storage; replacing a Pod loses its local SQLite data
+- No TLS, secrets management, network policy, or strong tenant isolation
+- No real payment, KYC, identity, ledger, or SIEM integrations
+- No production CI/CD, observability, backup, disaster recovery, or on-call model
+- No low-code editor for non-engineers
+
+All data is synthetic and every external integration ends at a mocked boundary.
+These missing capabilities represent much of the operational value supplied by
+Power Apps and must be included in any build-versus-buy decision.
+
+## Documentation
+
+| Document | Start here when you want to understand... |
+| --- | --- |
+| [In-house solution prototype](platform/docs/in-house-solution-prototype.md) | What was built, what it proves, and the proposed production direction |
+| [Business overview](platform/docs/business-view.md) | The value, risks, and decision in non-Kubernetes language |
+| [Current architecture](platform/docs/architecture.md) | What runs today and how requests and deployments flow |
+| [Target architecture](platform/docs/target-architecture.md) | The proposed end state and its assumptions |
+| [Gap analysis](platform/docs/gap-analysis.md) | What separates the POC from the target |
+| [Migration plan](platform/docs/migration-plan.md) | The phased path, gates, and stopping points |
+| [Operations guide](platform/docs/operations-guide.md) | Setup, daily commands, onboarding, and troubleshooting |
+| [Running multiple applications](platform/docs/running-multiple-applications.md) | How Kubernetes schedules and routes the applications |
+
+## Tests
+
+Run the platform configuration and Helm-rendering tests:
+
+```bash
+cd platform
+./platformctl list
+./.venv/bin/python -m pytest tests
+```
+
+Each application also has an independent test suite in its own `tests/`
+directory.
