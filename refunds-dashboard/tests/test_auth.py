@@ -3,7 +3,7 @@
 import os
 import tempfile
 
-os.environ.setdefault("KYC_DB_PATH", os.path.join(tempfile.mkdtemp(), "auth.db"))
+os.environ.setdefault("REFUNDS_DB_PATH", os.path.join(tempfile.mkdtemp(), "auth.db"))
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -18,13 +18,13 @@ def client():
 
 
 def test_the_caller_states_who_they_are(client):
-    me = client.get("/api/me", headers={"X-User": "priya@example.com"}).json()
-    assert (me["email"], me["role"]) == ("priya@example.com", "senior_reviewer")
+    me = client.get("/api/me", headers={"X-User": "dana@example.com"}).json()
+    assert (me["email"], me["role"]) == ("dana@example.com", "finance_approver")
 
 
 def test_a_caller_who_says_nothing_gets_the_default_user(client):
     me = client.get("/api/me").json()
-    assert (me["email"], me["role"]) == ("nora@example.com", "analyst")
+    assert (me["email"], me["role"]) == ("riley@example.com", "support_agent")
 
 
 def test_someone_outside_the_roster_is_rejected(client):
@@ -32,4 +32,4 @@ def test_someone_outside_the_roster_is_rejected(client):
 
 
 def test_the_roster_is_offered_to_the_switcher(client):
-    assert client.get("/api/me").json()["users"]["priya@example.com"] == "senior_reviewer"
+    assert client.get("/api/me").json()["users"]["dana@example.com"] == "finance_approver"

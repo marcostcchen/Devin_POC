@@ -21,8 +21,3 @@ controller:
   ingressClassResource:
     name: nginx
     default: true
-  config:
-    # Auth subrequests to the platform portal are cheap; keep the timeouts short
-    # so a broken identity service fails fast instead of hanging every app.
-    auth-keepalive: "0"
-    proxy-connect-timeout: "3"

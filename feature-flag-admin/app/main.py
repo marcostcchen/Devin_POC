@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.config import PROXY_AUTH, WEB_DIST_DIR
+from app.config import WEB_DIST_DIR
 from app.db import init_db
 from app.errors import DomainError
 from app.routers import audit, evaluation, flags, identity
@@ -46,7 +46,6 @@ def healthz() -> dict:
     return {
         "status": "ok",
         "app": "feature-flag-admin",
-        "proxy_auth": PROXY_AUTH,
         "frontend_built": os.path.exists(INDEX_FILE),
     }
 

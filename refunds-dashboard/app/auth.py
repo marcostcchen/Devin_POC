@@ -10,13 +10,16 @@ from typing import Optional
 
 from fastapi import Header, HTTPException
 
+#: Roles this app implements, most privileged first.
+ROLES = ("finance_approver", "support_agent")
+
 #: The roster. In a real deployment this is the identity provider.
 USERS = {
-    "nora@example.com": "analyst",
-    "omar@example.com": "analyst",
-    "priya@example.com": "senior_reviewer",
+    "riley@example.com": "support_agent",
+    "sam@example.com": "support_agent",
+    "dana@example.com": "finance_approver",
 }
-DEFAULT_USER = "nora@example.com"
+DEFAULT_USER = "riley@example.com"
 
 
 class Actor:
@@ -25,8 +28,8 @@ class Actor:
         self.role = role
 
     @property
-    def is_senior(self) -> bool:
-        return self.role == "senior_reviewer"
+    def is_finance(self) -> bool:
+        return self.role == "finance_approver"
 
 
 def current_actor(x_user: Optional[str] = Header(default=None)) -> Actor:

@@ -1,0 +1,10 @@
+id: refunds-dashboard
+name: Refunds Dashboard
+summary: Refund queue with a finance approval threshold, mocked payouts and an audit trail.
+repo: ../refunds-dashboard
+
+image: poc/refunds-dashboard:0.1.0
+host: refunds
+
+env:
+  APPROVAL_THRESHOLD_AMOUNT: "200"

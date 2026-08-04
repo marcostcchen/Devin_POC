@@ -1,50 +1,10 @@
-# Everything the platform needs to run this project. The project's own
-# repository knows nothing about this file.
-schema_version: 2
-
 id: feature-flag-admin
 name: Feature Flag Admin
 summary: Toggle features without a deploy, with an audit trail and %/team targeting.
-owner: Platform Experiments
-stage: poc
 repo: ../feature-flag-admin
 
-image:
-  repository: poc/feature-flag-admin
-  tag: "0.1.0"
+image: poc/feature-flag-admin:0.1.0
+host: flags
 
-runtime:
-  port: 8000
-  health_path: /healthz
-  replicas: 1
-  size: small
-  env:
-    FLAGS_SEED: "1"
-
-route:
-  subdomain: flags
-
-access:
-  # Directory groups (see platform.yaml) mapped to the roles this project
-  # implements. Anything unmapped falls back to default_role.
-  roles: [admin, viewer]
-  default_role: viewer
-  group_roles:
-    platform-admins: admin
-    feature-flag-admins: admin
-
-data:
-  classification: synthetic
-  persistence: ephemeral
-
-capabilities:
-  - CRUD for flags with server-enforced admin/viewer permissions
-  - Append-only audit log of every create, toggle, update and delete
-  - Percentage rollouts with sticky sha256 bucketing per flag and user
-  - Optional per-team targeting, with an evaluate endpoint that explains each result
-
-limitations:
-  - No SDK or client library; evaluation is an HTTP call per lookup with no caching
-  - Targeting is one percentage plus one team, not a rule engine over user attributes
-  - Identity is asserted by the platform's mocked SSO, not proven
-  - SQLite in an ephemeral volume; the data is gone when the namespace is deleted
+env:
+  FLAGS_SEED: "1"

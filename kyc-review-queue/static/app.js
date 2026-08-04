@@ -1,4 +1,4 @@
-let me = { email: "", role: "analyst", proxyAuth: false };
+let me = { email: "", role: "analyst" };
 let selectedId = null;
 
 const $ = (id) => document.getElementById(id);
@@ -41,14 +41,9 @@ async function loadMe(email) {
   const data = await fetch(url("api/me"), {
     headers: email ? { "X-User": email } : {},
   }).then((r) => r.json());
-  me = { email: data.email, role: data.role, proxyAuth: data.proxy_auth };
+  me = { email: data.email, role: data.role };
   const select = $("user");
-  if (me.proxyAuth) {
-    // Someone in front of the app owns identity; show it instead of a switcher.
-    select.hidden = true;
-    $("acting-as").hidden = false;
-    $("acting-as").textContent = data.display_name || data.email;
-  } else if (!select.options.length) {
+  if (!select.options.length) {
     for (const [addr, role] of Object.entries(data.users)) {
       const opt = document.createElement("option");
       opt.value = addr;
@@ -56,7 +51,7 @@ async function loadMe(email) {
       select.appendChild(opt);
     }
   }
-  if (!me.proxyAuth) select.value = me.email;
+  select.value = me.email;
   const role = $("role");
   role.textContent = me.role.replace("_", " ");
   role.className = `pill ${isSenior() ? "st-escalated" : "st-in_review"}`;

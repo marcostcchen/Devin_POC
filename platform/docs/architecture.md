@@ -2,125 +2,83 @@
 
 The platform is a cluster with an opinion about namespaces, and a CLI that turns
 one YAML file into the manifests that express it. There is no platform runtime:
-nothing supervises the projects, nothing proxies their traffic in application
-code, and no project imports anything from here.
+nothing supervises the projects, nothing proxies their traffic, and no project
+imports anything from here.
 
 ```mermaid
 flowchart LR
-    user([Reviewer]) -->|https://*.poc.example| ingress[ingress-nginx]
-
-    subgraph platform_ns["namespace: poc-platform"]
-        portal[Portal<br/>catalog + mocked sign-in<br/>/auth subrequest]
-    end
+    user([User]) -->|http://*.poc.localhost| ingress[ingress-nginx]
 
     subgraph kyc_ns["namespace: poc-kyc-review-queue"]
-        kyc[kyc-review-queue<br/>quota · netpol · PSA restricted]
+        kyc[kyc-review-queue]
     end
 
     subgraph flags_ns["namespace: poc-feature-flag-admin"]
-        flags[feature-flag-admin<br/>quota · netpol · PSA restricted]
+        flags[feature-flag-admin]
     end
 
-    ingress -.->|auth subrequest| portal
-    ingress -->|X-Auth-Request-*| kyc
-    ingress -->|X-Auth-Request-*| flags
-    kyc x--x|denied by NetworkPolicy| flags
+    subgraph refunds_ns["namespace: poc-refunds-dashboard"]
+        refunds[refunds-dashboard]
+    end
+
+    ingress --> kyc
+    ingress --> flags
+    ingress --> refunds
 ```
 
 ## The pieces
 
-**One generic chart.** `charts/poc-app` is deployed once per project. Nothing in
-it is project-specific; every difference is a value derived from
-`projects/<id>.yaml` by `platform_cli/render.py`. Adding project number four
-changes no chart, no CLI code and no platform manifest.
+**One generic chart.** `charts/poc-app` renders a Deployment, a Service and an
+Ingress, and is deployed once per project. Nothing in it is project-specific;
+every difference is a value derived from `projects/<id>.yaml` by
+`platform_cli/render.py`. Adding project number four changes no chart, no CLI
+code and no platform manifest.
 
 **One file per project.** `projects/<id>.yaml` is the whole configuration:
-image, port, hostname, roles, group mapping, size, data classification,
-capabilities and limitations. It is validated against `policy.yaml` before
-anything reaches the cluster.
+image, hostname, and optionally port, health path, replicas and environment
+variables. Everything else has a default.
 
-**A namespace per project.** `poc-<id>`, created by the project's own Helm
-release, so `platformctl delete <id>` takes the namespace and everything in it.
-Because a release cannot live in the namespace it creates, all release state is
-kept in `poc-platform`.
+**A namespace per project.** `poc-<id>`, created by `helm upgrade --install
+--create-namespace`, so `platformctl delete <id>` takes the namespace and
+everything in it. Projects never share one.
 
-**Identity at the edge, roles in the app.** The ingress annotation
-`auth-url` makes nginx call the portal's `/auth` for every request. The portal
-answers `202` with `X-Auth-Request-Email`, `-User` and `-Groups`, nginx copies
-those onto the upstream request (overwriting anything the browser sent), and the
-project maps groups to its own roles. Unauthenticated requests are redirected to
-the portal's sign-in page.
+**A hostname per project.** `<host>.<domain>`, routed by a single Ingress
+object. Nothing sits between the browser and the pod.
 
-```mermaid
-sequenceDiagram
-    participant B as Browser
-    participant N as ingress-nginx
-    participant P as Portal (/auth)
-    participant A as Project pod
+## What a project has to do
 
-    B->>N: GET /api/cases  (X-Auth-Request-Email: attacker@…)
-    N->>P: auth subrequest, forwarding cookies only
-    alt no session cookie
-        P-->>N: 401
-        N-->>B: 302 portal /login?rd=…
-    else signed in
-        P-->>N: 202 + X-Auth-Request-Email/User/Groups
-        N->>A: GET /api/cases with the portal's headers (spoofed ones replaced)
-        A-->>N: role = group_roles[first held group] or default_role
-    end
-```
-
-The session is a cookie on the parent domain, so one sign-in covers every
-project subdomain and a browser that never signed in inherits nothing.
+Listen on `$PORT`, answer `GET /healthz` while it is alive, and write only under
+`$DATA_DIR`. Those two variables are the entire runtime contract — the chart
+sets them, and a project that reads them runs identically under `docker run`, on
+kind and on AKS.
 
 ## Local and AKS are the same deployment
 
 | | Local (kind) | AKS |
 | --- | --- | --- |
-| Cluster | `local/kind-cluster.yaml`, ports 8080/8443 published | `infra/aks/main.bicep`: 2 nodes, Azure CNI overlay, **Calico** network policy, ACR, Log Analytics |
+| Cluster | `local/kind-cluster.yaml`, ports 8080/8443 published | `infra/aks/main.bicep`: 2 nodes, Azure CNI overlay, ACR |
 | Ingress | `bootstrap/ingress-nginx.local.yaml`, host ports | `bootstrap/ingress-nginx.aks.yaml`, internal Azure load balancer |
 | Images | built and `kind load`ed | built and pushed to ACR; the kubelet identity has `AcrPull` |
-| Identity | the portal's persona picker | oauth2-proxy + Entra ID at the same `auth-url`; the projects do not change |
-| TLS | none, plain HTTP on 8080 | cert-manager, `platform.tls` in `platform.yaml` |
 
-Everything else — chart, project files, namespaces, quotas, policies, hostnames
-— is byte-identical. `platform.yaml` holds the handful of values that differ.
+Everything else — the chart, the project files, the namespaces and the
+hostnames — is identical. `platform.yaml` holds the handful of values that
+differ. The Bicep has not been run against a real subscription.
 
-## Isolation, and how far it goes
+## What this prototype is not
 
-Each project namespace gets, from the same chart:
+It demonstrates the deployment model and nothing else. Left out, deliberately:
 
-- Pod Security Admission `enforce: restricted`;
-- a `ResourceQuota` (sized from `size` × `replicas`, plus room for one surge
-  pod) and a `LimitRange`, so one project cannot starve another;
-- a service account with `automountServiceAccountToken: false`;
-- a default-deny `NetworkPolicy` for ingress *and* egress, plus one allow rule:
-  ingress from the `ingress-nginx` namespace, egress to kube-dns;
-- a container that runs as uid 10001, non-root, with a read-only root
-  filesystem, no privilege escalation and all capabilities dropped.
-
-Verified on the local cluster:
-
-| Attempt | Result |
+| Missing | What the production version is |
 | --- | --- |
-| `kyc` pod → `feature-flag-admin.poc-feature-flag-admin.svc:8000` | times out (default-deny egress) |
-| `kyc` pod → `1.1.1.1:443` | times out (no internet egress) |
-| `kyc` pod → Kubernetes API | reachable at TCP level, `403 Forbidden`: no token is mounted |
-| `touch /app/x` in the container | read-only file system |
-| browser-supplied `X-Auth-Request-Email: attacker@example.com` | overwritten by nginx; the app sees the signed-in persona |
-| any project URL without a session | `302` to the portal's sign-in |
+| Authentication | oauth2-proxy or Entra ID at the ingress, asserting the caller to each app |
+| Isolation between projects | default-deny NetworkPolicies, Pod Security Admission, no service-account token |
+| Fair sharing | a ResourceQuota and LimitRange per namespace |
+| Durable state | a PersistentVolumeClaim instead of the pod's own filesystem |
+| Secrets | a secret store (Key Vault via CSI), not environment variables in a YAML file |
+| TLS | cert-manager and a real domain |
+| Governance | a policy check in CI over the project files, and admission control in the cluster |
 
-The API-server row is the honest limit of NetworkPolicy: traffic to the node
-itself is not reliably blockable by it, which is why the token is removed
-instead. On AKS the same policies are enforced by Calico (see the network
-profile in `main.bicep`) — without a policy-capable CNI they would be silently
-ignored, which is the one thing about the cluster that is not optional.
-
-## What is deliberately missing
-
-No service mesh, no per-project CI, no secret store, no shared UI toolkit, no
-platform database, no cross-project traffic. The portal is a mock: it asserts an
-identity nobody verified, which is exactly why it is a separate deployment
-behind the same `auth-url` that a real OIDC proxy would occupy. See
-[poc-environment.md](poc-environment.md) for the full boundary and
-[roadmap.md](roadmap.md) for what closing each gap costs.
+Each app still has roles (an analyst cannot see an escalated KYC case; only
+finance can approve a large refund), because that behaviour is the point of the
+apps. The acting user is whoever the browser says it is via an `X-User` header:
+enough to demonstrate the rules, and not authentication.
