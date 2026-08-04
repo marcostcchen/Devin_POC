@@ -11,6 +11,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+COPY static ./static
 
 # Runs as a non-root user with a read-only root filesystem wherever it is
 # deployed; $DATA_DIR is the only path it writes to.

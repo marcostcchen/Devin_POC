@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Feature Flag Admin</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #f6f7f9; color: #1c1f23; }
+    h1 { font-size: 20px; margin: 0; }
+    header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .card { background: #fff; border: 1px solid #e2e5e9; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eceef1; vertical-align: top; }
+    th { font-size: 12px; text-transform: uppercase; color: #6b7280; }
+    input, select, button, textarea { font: inherit; padding: 6px 8px; border: 1px solid #cbd2d9; border-radius: 6px; }
+    button { background: #1f6feb; color: #fff; border-color: #1f6feb; cursor: pointer; }
+    button.secondary { background: #fff; color: #1c1f23; border-color: #cbd2d9; }
+    button.danger { background: #b42318; border-color: #b42318; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .pill { padding: 2px 8px; border-radius: 999px; font-size: 12px; text-transform: uppercase; }
+    .st-on { background: #dcfce7; color: #166534; }
+    .st-off { background: #f1f3f5; color: #495057; }
+    .st-admin { background: #e0e7ff; color: #3730a3; }
+    .st-viewer { background: #cffafe; color: #155e75; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    /* `hidden` has to win over the display rules above. */
+    [hidden] { display: none !important; }
+    .muted { color: #6b7280; font-size: 12px; }
+    .columns { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+    .columns > .card:first-child { flex: 3; min-width: 420px; }
+    .columns > div:last-child { flex: 2; min-width: 320px; }
+    #error { color: #b42318; }
+    .bar { background: #eceef1; border-radius: 999px; height: 6px; width: 90px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; background: #1f6feb; }
+    ul.history { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+    .name { font-weight: 600; }
+    .flag-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .actions { white-space: nowrap; }
+    .counts { display: flex; gap: 16px; }
+    .counts strong { font-size: 18px; display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Feature Flag Admin</h1>
+    <label>Acting as
+      <select id="user"></select>
+    </label>
+    <span id="role" class="pill st-viewer"></span>
+    <span id="error"></span>
+  </header>
+
+  <div class="card counts">
+    <div><strong id="c-total">0</strong><span class="muted">flags</span></div>
+    <div><strong id="c-on">0</strong><span class="muted">enabled</span></div>
+    <div><strong id="c-partial">0</strong><span class="muted">partial rollout</span></div>
+    <div><strong id="c-targeted">0</strong><span class="muted">team targeted</span></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label>Search <input id="f-text" type="search" placeholder="name or description" /></label>
+      <label>State
+        <select id="f-state">
+          <option value="">all</option>
+          <option value="on">enabled</option>
+          <option value="off">disabled</option>
+        </select>
+      </label>
+      <button id="toggle-create" class="secondary" type="button">New flag</button>
+      <span id="count" class="muted"></span>
+    </div>
+
+    <form id="create" class="row" hidden style="margin-top: 12px;">
+      <input id="n-name" placeholder="name" required />
+      <input id="n-description" placeholder="description" />
+      <label>Rollout <input id="n-rollout" type="number" min="0" max="100" value="100" style="width: 76px;" /></label>
+      <input id="n-team" placeholder="target team (optional)" />
+      <label class="row"><input id="n-enabled" type="checkbox" /> enabled</label>
+      <button type="submit">Create</button>
+    </form>
+  </div>
+
+  <div class="columns">
+    <div class="card">
+      <strong>Flags</strong>
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>State</th><th>Rollout</th><th>Team</th><th></th></tr>
+        </thead>
+        <tbody id="flags"></tbody>
+      </table>
+      <p id="viewer-note" class="muted" hidden>
+        The viewer role is read-only: mutating controls are disabled here and the API rejects them with 403.
+      </p>
+    </div>
+
+    <div>
+      <div class="card">
+        <strong>Evaluate</strong>
+        <div class="row" style="margin-top: 8px;">
+          <select id="e-flag"></select>
+          <input id="e-user" placeholder="user id" value="user-1" />
+          <input id="e-team" placeholder="team" />
+          <button id="e-run" class="secondary" type="button">Resolve</button>
+        </div>
+        <p id="e-result" class="muted"></p>
+      </div>
+
+      <div class="card">
+        <strong>Recent activity</strong>
+        <ul id="activity" class="history"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="static/app.js"></script>
+</body>
+</html>

@@ -11,8 +11,8 @@ DATA_DIR = os.environ.get("DATA_DIR") or BASE_DIR
 #: SQLite file backing the admin panel. Overridable so tests get a scratch DB.
 DB_PATH = os.environ.get("FLAGS_DB_PATH", os.path.join(DATA_DIR, "flags.db"))
 
-#: Vite build output. Absent until `npm run build` (or `run.sh`) has run.
-WEB_DIST_DIR = os.path.join(BASE_DIR, "web", "dist")
+#: The panel: plain HTML and JavaScript, served as-is with no build step.
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 #: Roles this app understands. "admin" may mutate, "viewer" is read-only.
 ROLES = ("admin", "viewer")

@@ -1,10 +1,7 @@
 # Feature Flag Admin (POC)
 
-Minimal internal tool for toggling features without a deploy. FastAPI + SQLite.
-
-> The React client (`web/`) is not currently part of this repository, so `/`
-> answers 503 and the API is the whole app. Everything below the API section
-> describes the panel it was written for.
+Minimal internal tool for toggling features without a deploy. FastAPI + SQLite,
+with a plain HTML/JavaScript panel served from `static/` — no build step.
 
 ## Run
 
@@ -51,18 +48,20 @@ roles are real and enforced server-side, but who you are is not.
 
 ## The panel
 
-A sticky top bar (identity switcher + current role), summary counts, then a two-column
-workspace: the flag list on the left, the *Evaluate* panel and global activity feed in a
-right-hand rail that collapses under the list on narrow screens. Each flag row has an
-on/off switch, a rollout bar with the stored percentage and team, inline targeting and
-description editors, and a *History* button that expands the audit trail beneath the row.
-The toolbar filters by name/description and by state, and reveals the create form.
+A header with the identity switcher and current role, summary counts, then a
+toolbar that filters by name/description and by state and reveals the create
+form. The flag list gives each flag an on/off button, a rollout bar, the target
+team, and a *History* button that expands its audit trail beneath the row;
+clicking the description, the rollout *edit* button or the team cell edits that
+field. A right-hand rail holds the *Evaluate* panel and the global activity
+feed, and drops under the list on narrow screens. For a viewer every mutating
+control is disabled, and the API refuses the call anyway.
 
 ## Layout
 
 ```
 app/
-  main.py          FastAPI app: routers, error handling, serves web/dist
+  main.py          FastAPI app: routers, error handling, serves static/
   config.py        DB path, static paths, roles, the user roster
   auth.py          Actor resolution from the roster, admin check
   models.py        Pydantic request/response schemas
@@ -72,6 +71,7 @@ app/
   targeting.py     Pure evaluation: bucketing, team and rollout rules
   routers/         One module per resource (flags, audit, evaluation, identity)
   seed.py          Example flags for an empty database
+static/            The panel: index.html and app.js, no build step
 tests/             API smoke tests, identity mapping, targeting unit tests
 Dockerfile         Non-root, read-only root filesystem, $PORT, $DATA_DIR
 ```
