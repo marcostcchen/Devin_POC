@@ -44,7 +44,7 @@ kind create cluster --config local/kind-cluster.yaml
 Then open <http://portal.poc.localhost:8080> — `*.localhost` resolves to
 127.0.0.1 in browsers, so there is nothing to add to `/etc/hosts`. Sign in as a
 persona and follow the links: <http://kyc.poc.localhost:8080>,
-<http://flags.poc.localhost:8080>.
+<http://flags.poc.localhost:8080>, <http://refunds.poc.localhost:8080>.
 
 ```bash
 ./platformctl status                       # what is running, per project

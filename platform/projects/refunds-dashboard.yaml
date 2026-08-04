@@ -1,0 +1,49 @@
+# Everything the platform needs to run this project. The project's own
+# repository knows nothing about this file.
+schema_version: 2
+
+id: refunds-dashboard
+name: Refunds Dashboard
+summary: Refund queue with a finance approval threshold, mocked payouts and an audit trail.
+owner: Support & Finance Experiments
+stage: poc
+repo: ../refunds-dashboard
+
+image:
+  repository: poc/refunds-dashboard
+  tag: "0.1.0"
+
+runtime:
+  port: 8000
+  health_path: /healthz
+  replicas: 1
+  size: small
+  env:
+    # Refunds at or above this amount need a finance approver, whoever raised them.
+    APPROVAL_THRESHOLD_AMOUNT: "200"
+
+route:
+  subdomain: refunds
+
+access:
+  roles: [support_agent, finance_approver]
+  default_role: support_agent
+  group_roles:
+    refunds-finance: finance_approver
+    refunds-agents: support_agent
+
+data:
+  classification: synthetic
+  persistence: ephemeral
+
+capabilities:
+  - Refund queue with status and amount filters, and a summary dashboard
+  - Approve/deny with a required reason, enforced server-side
+  - Amount threshold: only a finance approver can decide a large refund or pay one out
+  - Append-only audit trail per request and a global audit view
+
+limitations:
+  - No payment processor; "mark as processed" moves no money
+  - No reconciliation against a ledger, and amounts are stored as floats, not cents
+  - Identity is asserted by the platform's mocked SSO, not proven
+  - SQLite in an ephemeral volume; the data is gone when the namespace is deleted

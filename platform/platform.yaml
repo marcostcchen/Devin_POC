@@ -38,13 +38,13 @@ sizes:
 principals:
   - email: ada@example.com
     display_name: Ada Lovelace
-    groups: [platform-admins, feature-flag-admins, kyc-seniors]
+    groups: [platform-admins, feature-flag-admins, kyc-seniors, refunds-finance]
   - email: grace@example.com
     display_name: Grace Hopper
-    groups: [feature-flag-admins, kyc-analysts]
+    groups: [feature-flag-admins, kyc-analysts, refunds-agents]
   - email: linus@example.com
     display_name: Linus Torvalds
-    groups: [kyc-analysts]
+    groups: [kyc-analysts, refunds-agents]
   - email: mira@example.com
     display_name: Mira Osei
     groups: []

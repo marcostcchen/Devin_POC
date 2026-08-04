@@ -21,9 +21,14 @@ flowchart LR
         flags[feature-flag-admin<br/>quota · netpol · PSA restricted]
     end
 
+    subgraph refunds_ns["namespace: poc-refunds-dashboard"]
+        refunds[refunds-dashboard<br/>quota · netpol · PSA restricted]
+    end
+
     ingress -.->|auth subrequest| portal
     ingress -->|X-Auth-Request-*| kyc
     ingress -->|X-Auth-Request-*| flags
+    ingress -->|X-Auth-Request-*| refunds
     kyc x--x|denied by NetworkPolicy| flags
 ```
 

@@ -19,7 +19,7 @@ The same commands run against AKS; only `platform.yaml` differs.
 | [`platform/`](platform/) | The platform: one generic Helm chart, one YAML file per project, `platformctl`, the portal and the AKS Bicep |
 | [`feature-flag-admin/`](feature-flag-admin/) | Internal feature-flag admin panel: CRUD, audit log, RBAC, %/team targeting (FastAPI + SQLite) |
 | [`kyc-review-queue/`](kyc-review-queue/) | Compliance KYC review queue: case triage, decisions with required reason, audit trail, analyst/senior RBAC, escalation queue (FastAPI + SQLite) |
-| [`refunds-dashboard/`](refunds-dashboard/) | Specification and API docs only — the implementation is not in this repository |
+| [`refunds-dashboard/`](refunds-dashboard/) | Refund review dashboard: queue and summary metrics, approve/deny with a required reason, a finance approval threshold, mocked payouts, audit trail (FastAPI + SQLite) |
 
 ## Adding a project
 

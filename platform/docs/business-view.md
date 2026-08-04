@@ -18,12 +18,11 @@ It brings multiple prototypes into one place with:
 - Repeatable demo data and resettable scenarios
 - A clear record of what each prototype proves and what it does not
 
-Two applications currently demonstrate the model:
+Three applications currently demonstrate the model:
 
 1. **Feature Flag Admin** - controls feature availability without requiring a software deployment.
 2. **KYC Review Queue** - supports compliance case triage, escalation, decisions, and audit history.
-
-A third, the **Refunds Dashboard**, is specified in this repository but its implementation is not currently part of it. It is described below because it remains a candidate, and because the platform requires no change to host it.
+3. **Refunds Dashboard** - supports refund review with an approval threshold, mocked payouts, and audit history.
 
 The platform already proves that unrelated applications can be presented through a consistent, governed experience. It also makes business workflows, roles, approval rules, and audit requirements easier to review with stakeholders.
 
@@ -118,7 +117,7 @@ This makes cross-application demonstrations more coherent while preserving the r
 - Workload balancing, notifications, and service-level timers
 - Use of real customer or KYC data
 
-### 3. Refunds Dashboard (specified, not currently implemented)
+### 3. Refunds Dashboard
 
 **Business purpose:** Help support and finance teams review refund requests with clear approval controls and traceability.
 
@@ -129,7 +128,7 @@ This makes cross-application demonstrations more coherent while preserving the r
 - A threshold rule requiring finance approval for requests of $200 or more
 - Role separation between support agents and finance approvers
 - Audit history for refund decisions
-- The intended shape of a payout workflow
+- A payout step that only finance can complete, with the payment itself simulated
 
 **What remains outside the POC:**
 
