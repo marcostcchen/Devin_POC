@@ -1,0 +1,89 @@
+# The rules of this environment, in machine-readable form.
+#
+# `limits` is enforced: `platformctl validate` fails and `platformctl deploy`
+# refuses to install a project whose configuration breaks one of these rules.
+# `allowed` / `not_allowed` are the human-facing guardrails, rendered in the
+# portal and expanded in docs/poc-environment.md.
+
+environment: poc
+
+limits:
+  # A project may only declare data that is safe to lose and safe to leak.
+  data_classifications: [synthetic, anonymized-sample]
+  # Nothing here claims to be more than a prototype.
+  stages: [poc, prototype]
+  # Resource envelopes a project may ask for, by name (see platform.yaml).
+  sizes: [small, medium]
+  # A POC does not need to be highly available, and one namespace's noisy
+  # neighbour should not be able to fill the node pool.
+  max_replicas: 2
+  # Largest volume a project may claim, in gibibytes. 0 disables persistence.
+  max_storage_gi: 5
+  # Identity always arrives as headers from the platform's auth proxy.
+  identity_modes: [proxy-headers]
+  # An image must be pinned: a moving tag makes a demo unreproducible.
+  forbidden_image_tags: [latest, master, main]
+  # Every project must be honest about what it fakes.
+  min_limitations: 1
+  # Environment variables are configuration, never credentials.
+  forbidden_env_name_patterns: ["(?i)(password|secret|token|api_?key|connection_?string)"]
+
+allowed:
+  - title: Demonstrate a workflow end to end
+    detail: >-
+      Queue, detail, decision, audit trail — the full happy path with realistic
+      screens, so reviewers can react to the actual interaction rather than a
+      slide.
+  - title: Mocked identity and role-based behaviour
+    detail: >-
+      Sign in as a persona in the portal and see permissions change. Roles are
+      enforced server-side inside each project, but the identity itself is
+      asserted by the portal, not proven against a directory.
+  - title: Synthetic, deterministic seed data
+    detail: >-
+      Every project seeds itself on first start from a fixed dataset, so demos
+      look the same each time and a reset is one `platformctl restart` away.
+  - title: Namespace-level isolation
+    detail: >-
+      One namespace per project with its own quota, service account and
+      default-deny network policy. Projects cannot see or reach each other.
+  - title: Server-enforced business rules
+    detail: >-
+      Approval thresholds, required reasons, status transitions and rollout
+      targeting are real code, not UI theatre. They are the part worth reviewing.
+  - title: Append-only audit trails
+    detail: >-
+      Who did what, when and why is recorded for every state change so the shape
+      of a compliance story can be evaluated early.
+
+not_allowed:
+  - title: Real authentication or SSO
+    detail: >-
+      The portal has no password, no session security and no token validation.
+      It asserts a persona; nothing verifies it.
+    instead: >-
+      Sign in as a persona in the portal and treat every role check as a demo of
+      intent. In the target deployment the portal is replaced by oauth2-proxy in
+      front of Entra ID, and no project changes.
+  - title: Real customer, payment or personal data
+    detail: >-
+      Databases are seeded with synthetic records and live in ephemeral volumes
+      that are deleted with the namespace.
+    instead: Extend the seed data, or ask for an anonymized sample.
+  - title: Production traffic or production integrations
+    detail: >-
+      The cluster is isolated: a default-deny network policy blocks egress from
+      every project namespace apart from DNS.
+    instead: Mock the integration inside the project and say so in `limitations`.
+  - title: Durable state
+    detail: >-
+      Namespaces are disposable and rebuilt from configuration. Anything not in
+      Git is expected to be lost.
+    instead: Seed it, or declare a small volume and accept that it is throwaway.
+  - title: Anything that needs a secret
+    detail: >-
+      There is no secret store wired in, and `platformctl` rejects credential-
+      shaped environment variables.
+    instead: >-
+      Keep the credential-requiring part mocked; graduating the project is what
+      earns it a Key Vault reference.

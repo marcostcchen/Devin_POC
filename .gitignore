@@ -5,5 +5,5 @@ __pycache__/
 test-plan.md
 test-report.md
 
-# Platform runtime state: per-app databases and process logs.
-poc-platform/.data/
+# Rendered Helm values and other platform scratch output.
+platform/.out/

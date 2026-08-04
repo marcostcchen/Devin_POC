@@ -1,0 +1,21 @@
+# A one-node cluster that behaves like the AKS one for routing purposes: the
+# ingress controller's ports are published on localhost, so the same charts and
+# the same hostnames work on a laptop.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: poc-platform
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 8443
+        protocol: TCP

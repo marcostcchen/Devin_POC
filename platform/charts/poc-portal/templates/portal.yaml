@@ -1,0 +1,160 @@
+{{/*
+The platform namespace itself is not part of this release: it holds the release
+state of every project, so it has to exist before Helm runs. `platformctl`
+applies bootstrap/system-namespace.yaml.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: poc-portal
+  namespace: {{ .Values.namespace }}
+data:
+  platform.json: |
+    {{ .Values.config | toJson }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: poc-portal
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: poc-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: poc-portal
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: poc-portal
+      annotations:
+        # Roll the pod when the catalog changes, so `platformctl deploy` is the
+        # only step needed to publish a new project.
+        poc.platform/config-checksum: {{ .Values.config | toJson | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: portal
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: PORT
+              value: "8000"
+            - name: PORTAL_COOKIE_DOMAIN
+              value: {{ .Values.cookieDomain | quote }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/poc-platform
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: poc-portal
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: poc-portal
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: poc-portal
+spec:
+  selector:
+    app.kubernetes.io/name: poc-portal
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: poc-portal
+  namespace: {{ .Values.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: poc-portal
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # Browsers and the auth subrequests both arrive from the ingress controller.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8000
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: poc-portal
+  namespace: {{ .Values.namespace }}
+  annotations:
+    {{- if .Values.route.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.route.tls.clusterIssuer | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.route.ingressClassName }}
+  rules:
+    - host: {{ .Values.route.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: poc-portal
+                port:
+                  name: http
+  {{- if .Values.route.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.route.host }}
+      secretName: poc-portal-tls
+  {{- end }}

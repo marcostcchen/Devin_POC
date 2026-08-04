@@ -3,11 +3,9 @@ import sqlite3
 import threading
 from typing import Iterator
 
-# Under the POC platform the database lives in the platform's disposable state
-# directory, so `poc-platform/reset.sh` wipes it with everything else.
-_DEFAULT_DIR = os.environ.get("PLATFORM_DATA_DIR") or os.path.dirname(
-    os.path.dirname(__file__)
-)
+# $DATA_DIR is the one writable path the app is given wherever it runs; from a
+# checkout it falls back to the app folder.
+_DEFAULT_DIR = os.environ.get("DATA_DIR") or os.path.dirname(os.path.dirname(__file__))
 DB_PATH = os.environ.get("KYC_DB_PATH", os.path.join(_DEFAULT_DIR, "kyc.db"))
 
 SCHEMA = """

@@ -1,0 +1,17 @@
+{{/*
+The namespace is part of the release, so deleting the project deletes its
+world: pods, data, quota and policies. Pod Security Admission is set to
+`restricted` here rather than trusted to the deployment spec, so a project
+cannot opt out of it.
+*/}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace }}
+  labels:
+    {{- include "poc-app.labels" . | nindent 4 }}
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+  annotations:
+    poc.platform/owner: {{ .Values.project.owner | quote }}
+    poc.platform/summary: {{ .Values.project.summary | quote }}

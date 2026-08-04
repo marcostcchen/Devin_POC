@@ -1,0 +1,43 @@
+{{/*
+The only place identity is enforced. nginx calls the portal's /auth before it
+proxies anything; the headers in `auth-response-headers` are copied onto the
+upstream request with `proxy_set_header`, which also overwrites any copy the
+browser tried to send. A project therefore cannot be reached unauthenticated
+and cannot be lied to about who is calling.
+*/}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "poc-app.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "poc-app.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/auth-url: {{ .Values.auth.url | quote }}
+    nginx.ingress.kubernetes.io/auth-response-headers: {{ .Values.auth.responseHeaders | quote }}
+    {{- with .Values.auth.signinUrl }}
+    nginx.ingress.kubernetes.io/auth-signin: {{ . | quote }}
+    nginx.ingress.kubernetes.io/auth-signin-redirect-param: rd
+    {{- end }}
+    {{- if .Values.route.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.route.tls.clusterIssuer | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.route.ingressClassName }}
+  rules:
+    - host: {{ .Values.route.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "poc-app.name" . }}
+                port:
+                  name: http
+  {{- if .Values.route.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.route.host }}
+      secretName: {{ include "poc-app.name" . }}-tls
+  {{- end }}

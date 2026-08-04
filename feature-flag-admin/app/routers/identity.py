@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends
 
 from app.auth import Actor, current_actor
-from app.config import PLATFORM_MANAGED, USERS
+from app.config import PROXY_AUTH, USERS
 from app.models import Identity
 
 router = APIRouter(tags=["identity"])
@@ -15,10 +15,9 @@ def me(actor: Actor = Depends(current_actor)) -> Identity:
     return Identity(
         email=actor.email,
         role=actor.role,
-        # Under the platform the roster lives in the console, so there is
-        # nothing local to switch between.
-        users={} if PLATFORM_MANAGED else USERS,
+        # Behind a proxy the identity is not ours to change, so there is nothing
+        # local to switch between.
+        users={} if PROXY_AUTH else USERS,
         display_name=actor.display_name,
-        platform_managed=PLATFORM_MANAGED,
-        platform_console_url="/" if PLATFORM_MANAGED else "",
+        proxy_auth=PROXY_AUTH,
     )

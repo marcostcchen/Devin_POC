@@ -1,0 +1,28 @@
+# ingress-nginx values for the local kind cluster: one controller pod pinned to
+# the control-plane node, publishing :80/:443 through the node's host ports.
+# On AKS the same chart is installed with bootstrap/ingress-nginx.aks.yaml,
+# which asks for a LoadBalancer instead. Everything above the controller — the
+# Ingress objects the project chart renders — is identical.
+controller:
+  hostPort:
+    enabled: true
+  service:
+    type: NodePort
+  nodeSelector:
+    ingress-ready: "true"
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Equal
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/master
+      operator: Equal
+      effect: NoSchedule
+  watchIngressWithoutClass: false
+  ingressClassResource:
+    name: nginx
+    default: true
+  config:
+    # Auth subrequests to the platform portal are cheap; keep the timeouts short
+    # so a broken identity service fails fast instead of hanging every app.
+    auth-keepalive: "0"
+    proxy-connect-timeout: "3"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Run the queue from a checkout, with no platform and no container.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -8,4 +9,4 @@ fi
 ./.venv/bin/pip install --quiet --upgrade pip
 ./.venv/bin/pip install --quiet -r requirements.txt
 
-exec ./.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8001}" --reload
+exec ./.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}" --reload

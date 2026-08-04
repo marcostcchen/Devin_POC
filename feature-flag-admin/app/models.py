@@ -80,10 +80,9 @@ class Identity(BaseModel):
     role: str
     users: dict[str, str]
     display_name: str = ""
-    #: True when the POC platform picked the identity; the UI then hides its own
-    #: switcher because the platform console owns that choice.
-    platform_managed: bool = False
-    platform_console_url: str = ""
+    #: True when an authenticating proxy picked the identity; the UI then hides
+    #: its own switcher because that choice is not the app's to make.
+    proxy_auth: bool = False
 
 
 class EvaluationResult(BaseModel):

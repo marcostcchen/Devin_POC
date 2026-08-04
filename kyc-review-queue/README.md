@@ -6,19 +6,28 @@ verification cases. FastAPI + SQLite + a single static HTML/JS page, no build st
 ## Run
 
 ```bash
-./run.sh          # creates .venv, installs deps, starts uvicorn on :8001
+./run.sh          # creates .venv, installs deps, starts uvicorn on :8000
 ```
 
-Open http://localhost:8001. `kyc.db` is created and seeded with 18 synthetic cases
-on first start; `rm kyc.db` to reset. `PORT=9000 ./run.sh` to change the port.
+Or as the container the platform deploys:
 
-### Under the POC platform
+```bash
+docker build -t poc/kyc-review-queue:0.1.0 .
+docker run --rm -p 8000:8000 poc/kyc-review-queue:0.1.0
+```
 
-This app is also a platform prototype ([`poc.yaml`](poc.yaml)): start it from the
-[platform console](../poc-platform/) and it is served at `/apps/kyc-review-queue/`,
-the persona selected there becomes the acting reviewer, and `kyc.db` moves to the
-platform's disposable state directory. Standalone, nothing changes — the
-"Acting as" dropdown and the local database come back.
+Open http://localhost:8000. `kyc.db` (or `$DATA_DIR/kyc.db`) is created and
+seeded with 18 synthetic cases on first start; `rm kyc.db` to reset.
+`PORT=9000 ./run.sh` to change the port.
+
+### On the POC platform
+
+Deployed by [`platform/projects/kyc-review-queue.yaml`](../platform/projects/kyc-review-queue.yaml)
+at its own hostname. The platform sets `AUTH_MODE=proxy-headers`, so the acting
+reviewer comes from the `X-Auth-Request-*` headers the ingress injects and
+`AUTH_GROUP_ROLES` maps the caller's directory groups onto `analyst` or
+`senior_reviewer`. Standalone, nothing changes here — the local roster and the
+`X-User` header come back. There is no platform code in this repository.
 
 ## What it does
 
@@ -33,14 +42,15 @@ platform's disposable state directory. Standalone, nothing changes — the
   (`GET /api/cases/{id}/history`) and a global feed (`GET /api/audit`).
 - **RBAC**: `analyst` reviews and decides; `senior_reviewer` can additionally see
   escalated cases and override closed ones (the override is recorded as its own audit
-  entry with `action=override`). Switch identity with the "Acting as" dropdown; users
-  and roles are hardcoded in `USERS` in `app/main.py`.
+  entry with `action=override`). Switch identity with the "Acting as" dropdown; the
+  standalone roster is hardcoded in `USERS` in `app/auth.py`.
 - **Escalation path**: escalating moves the case to `escalated`, which drops it out of
   the analyst's queue and out of `GET /api/cases/{id}` for analysts (404), leaving it
   visible only to the senior reviewer — filter *Status: escalated* to work that queue.
 
-There is no real auth: the client sends the selected identity in an `X-User` header,
-which the server trusts. That is intentional for this POC.
+There is no real auth: standalone, the client sends the selected identity in an
+`X-User` header and the server trusts it; behind a proxy it trusts the proxy's
+`X-Auth-Request-*` headers instead. That is intentional for this POC.
 
 ## Seed data
 
@@ -60,23 +70,25 @@ like a real SSN, passport number or address.
 | GET | `/api/cases/{id}/history` | any |
 | GET | `/api/audit?limit=` | any |
 
-Interactive docs at http://localhost:8001/docs.
+Interactive docs at http://localhost:8000/docs.
 
 ## Tests
 
 ```bash
+python3 -m venv .venv && ./.venv/bin/pip install -r requirements-dev.txt
 ./.venv/bin/python -m pytest tests -q
 ```
 
-One smoke test covering queue filtering/ordering, the required reason, the audit
-trail, the analyst/senior RBAC split and the escalation path.
+A smoke test covering queue filtering/ordering, the required reason, the audit
+trail, the analyst/senior RBAC split and the escalation path, plus tests for the
+two identity modes and the group-to-role mapping.
 
 ## Out of scope (deliberately not built)
 
 No real identity verification, document OCR or sanctions/PEP screening — `risk_level`
 is a static label in the seed data, not the output of any check. No real
-authentication. No real (or real-looking) customer PII. No deployment config, no
-polish beyond basic usability, no tests beyond the smoke test.
+authentication. No real (or real-looking) customer PII. Nothing beyond a
+container and a health check for deployment, no polish beyond basic usability.
 
 ## What making this production-real would take
 

@@ -1,11 +1,11 @@
-let me = { email: "", role: "analyst", platformManaged: false };
+let me = { email: "", role: "analyst", proxyAuth: false };
 let selectedId = null;
 
 const $ = (id) => document.getElementById(id);
 const isSenior = () => me.role === "senior_reviewer";
 
-// Paths are resolved against the page URL so the same files work standalone
-// ('/') and behind the POC platform gateway ('/apps/kyc-review-queue/').
+// Paths are resolved against the page URL, so the app does not care which
+// host or mount point it is served from.
 const url = (path) => new URL(path, document.baseURI).toString();
 
 async function api(path, options = {}) {
@@ -41,15 +41,13 @@ async function loadMe(email) {
   const data = await fetch(url("api/me"), {
     headers: email ? { "X-User": email } : {},
   }).then((r) => r.json());
-  me = { email: data.email, role: data.role, platformManaged: data.platform_managed };
+  me = { email: data.email, role: data.role, proxyAuth: data.proxy_auth };
   const select = $("user");
-  if (me.platformManaged) {
-    // The platform console owns identity; show it instead of a switcher.
+  if (me.proxyAuth) {
+    // Someone in front of the app owns identity; show it instead of a switcher.
     select.hidden = true;
     $("acting-as").hidden = false;
     $("acting-as").textContent = data.display_name || data.email;
-    $("console-link").hidden = false;
-    $("console-link").href = data.platform_console_url || "/";
   } else if (!select.options.length) {
     for (const [addr, role] of Object.entries(data.users)) {
       const opt = document.createElement("option");
@@ -58,7 +56,7 @@ async function loadMe(email) {
       select.appendChild(opt);
     }
   }
-  if (!me.platformManaged) select.value = me.email;
+  if (!me.proxyAuth) select.value = me.email;
   const role = $("role");
   role.textContent = me.role.replace("_", " ");
   role.className = `pill ${isSenior() ? "st-escalated" : "st-in_review"}`;
