@@ -3,7 +3,9 @@
 *Where this is going.* For what runs today see
 [architecture.md](architecture.md); for the difference between the two and what
 it costs to close, see [gap-analysis.md](gap-analysis.md) and
-[migration-plan.md](migration-plan.md).
+[migration-plan.md](migration-plan.md). For the concise prototype assessment
+used in the build-versus-buy document, see
+[in-house-solution-prototype.md](in-house-solution-prototype.md).
 
 The original sketch this document formalises:
 
@@ -14,6 +16,46 @@ shared layer underneath them — identity, policy, audit, and a UI/workflow
 toolkit. Build that once and each additional application is days rather than
 weeks. Everything below follows from that one claim, and the whole point of the
 next phase of work is to test it.
+
+## End-state architecture at a glance
+
+This is the simplified target view for presentations and general design
+documents:
+
+```mermaid
+flowchart TB
+    users["Business users<br/>Analysts · Operations · Auditors"]
+
+    subgraph platform["Internal Application Platform"]
+        edge["Secure entry<br/>DNS · TLS · WAF · Enterprise sign-in"]
+        shared["Shared platform capabilities<br/>Authorisation · Workflow · Audit · UI toolkit"]
+        apps["Business applications<br/>KYC · Refunds · Feature Flags · Future apps"]
+        services["Platform services<br/>Postgres · Queue · Secrets · Observability"]
+
+        edge --> shared --> apps --> services
+    end
+
+    enterprise["Enterprise systems<br/>Identity · Ledger · Payments · KYC vendors · Data warehouse"]
+    delivery["Engineering and operations<br/>CI/CD · Infrastructure as code · Security · Monitoring · Support"]
+
+    users -->|HTTPS| edge
+    apps -->|Controlled adapters| enterprise
+    delivery -. builds and operates .-> platform
+```
+
+Read it from top to bottom:
+
+1. Business users enter through one secured edge and enterprise sign-in.
+2. Every application uses the same authorisation, workflow, audit, and user
+   interface capabilities.
+3. Applications contain mainly their own business rules and screens.
+4. Shared data, queues, secrets, and observability support all applications.
+5. Controlled adapters connect applications to existing systems of record.
+6. A platform team delivers and operates the complete environment.
+
+The boundary is important: the platform owns workflow and operational evidence,
+but enterprise systems such as the ledger and payment provider remain the
+systems of record.
 
 ## 1. Context
 

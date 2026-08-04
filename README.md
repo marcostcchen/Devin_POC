@@ -33,6 +33,12 @@ and write only under `$DATA_DIR`.
 
 ## Start here
 
+- [Operations guide](platform/docs/operations-guide.md) — setup, daily commands,
+  new application onboarding, troubleshooting, and cleanup.
+- [In-house solution prototype](platform/docs/in-house-solution-prototype.md) —
+  what the POC shares, proves, leaves out, and proposes for production.
+- [Running multiple applications](platform/docs/running-multiple-applications.md)
+  — how Pods, Deployments, Services, Ingress, nodes, and namespaces work together.
 - [Current architecture](platform/docs/architecture.md) — what actually runs,
   how local and AKS stay identical, and what the prototype leaves out.
 - [Target architecture](platform/docs/target-architecture.md) — the in-house

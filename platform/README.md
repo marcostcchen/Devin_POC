@@ -80,6 +80,9 @@ prototype for the deployment model only.
 
 | Document | What it answers |
 | --- | --- |
+| [docs/operations-guide.md](docs/operations-guide.md) | How to set up, operate, troubleshoot, and onboard an application |
+| [docs/in-house-solution-prototype.md](docs/in-house-solution-prototype.md) | What the POC proves and what an in-house production solution requires |
+| [docs/running-multiple-applications.md](docs/running-multiple-applications.md) | How Kubernetes schedules and routes multiple applications |
 | [docs/architecture.md](docs/architecture.md) | What runs today, and what is deliberately missing |
 | [docs/target-architecture.md](docs/target-architecture.md) | What we are aiming at, and what it assumes |
 | [docs/gap-analysis.md](docs/gap-analysis.md) | The difference between the two, box by box |
