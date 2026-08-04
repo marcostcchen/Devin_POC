@@ -5,6 +5,10 @@
 **Status:** Proof of concept (POC), not production software  
 **Date:** August 3, 2026
 
+The technical companions to this document: [what runs
+today](architecture.md), [what we are aiming at](target-architecture.md), [the
+difference](gap-analysis.md) and [the plan to close it](migration-plan.md).
+
 ## Executive summary
 
 The POC Platform is a shared place to deploy and demonstrate internal business applications before committing to full production development.
@@ -181,27 +185,45 @@ That hypothesis is **not yet proven**. The applications independently implement 
 
 ## Recommended next steps
 
+These are the same phases as the engineering [migration
+plan](migration-plan.md), in business terms.
+
+### Phase 0: Settle the decisions the target assumes
+
+One week, no build. Whether all applications converge on a single technology, which cloud the platform lives in, who carries support and compliance ownership, and above all whether the number of applications is expected to grow. Each later phase is sized differently depending on the answers.
+
+**Business question answered:** Are we committing to a platform, or to three applications?
+
 ### Phase 1: Add the controls a shared environment needs
 
 1. Add enterprise sign-in at the platform edge, so applications no longer trust a self-declared user.
-2. Add isolation between applications and limits on what each may consume.
-3. Add continuous integration checks so tests and quality checks run automatically for every change.
+2. Make stored data survive a restart, and hold credentials in a secrets manager.
+3. Add isolation between applications and limits on what each may consume.
+4. Add continuous integration checks so tests and quality checks run automatically for every change.
 
 **Business question answered:** Can the platform host workloads that matter, with consistent control and evidence?
 
-### Phase 2: Test real integration behavior
+### Phase 2: Test the reuse and cost thesis
 
-Introduce simulated external services behind standard integration adapters, including retry, idempotency, and controlled failure scenarios.
+Build a small shared toolkit for common workflow components, rebuild one existing application with it, and create a fourth thin application. Measure actual delivery effort, defects, consistency, and reuse against numbers agreed beforehand.
 
-**Business question answered:** What happens operationally when a payment, screening, ledger, or other downstream service fails?
-
-### Phase 3: Test the reuse and cost thesis
-
-Build a small shared toolkit for common workflow components, rebuild one existing screen with it, and create a fourth thin application. Measure actual delivery effort, defects, consistency, and reuse.
+This is the decision point. A negative result here is a successful outcome: it saves the cost of everything after it.
 
 **Business question answered:** Does the platform materially reduce the time and cost of delivering the next application?
 
-### Phase 4: Define production graduation
+### Phase 3: Make policy and audit central
+
+One definition of who may do what, enforced for every application, and one audit trail shipped to the systems the risk function already uses.
+
+**Business question answered:** Can we answer an auditor's question from one place, for every application?
+
+### Phase 4: Test real integration behavior
+
+Introduce external services behind standard integration adapters, including retry, idempotency, and controlled failure scenarios.
+
+**Business question answered:** What happens operationally when a payment, screening, ledger, or other downstream service fails?
+
+### Phase 5: Define production graduation
 
 For any prototype selected for real use, assign an owning team and replace the simulated parts with production capabilities, including:
 

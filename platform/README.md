@@ -74,9 +74,17 @@ laptop.
 Authentication, authorization between projects, quotas, network policy, secrets
 and TLS. Each app fakes its own users with an `X-User` header so its role
 behaviour can be demonstrated; nothing verifies who the caller is. This is a
-prototype for the deployment model only — see
-[docs/architecture.md](docs/architecture.md) for what the production version of
-each of those would be.
+prototype for the deployment model only.
+
+## Docs
+
+| Document | What it answers |
+| --- | --- |
+| [docs/architecture.md](docs/architecture.md) | What runs today, and what is deliberately missing |
+| [docs/target-architecture.md](docs/target-architecture.md) | What we are aiming at, and what it assumes |
+| [docs/gap-analysis.md](docs/gap-analysis.md) | The difference between the two, box by box |
+| [docs/migration-plan.md](docs/migration-plan.md) | How to close it, in what order, and where to stop |
+| [docs/business-view.md](docs/business-view.md) | The same picture without the Kubernetes vocabulary |
 
 ## Tests
 

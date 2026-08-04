@@ -1,84 +1,218 @@
-# Architecture
+# Current architecture (the POC)
 
-The platform is a cluster with an opinion about namespaces, and a CLI that turns
-one YAML file into the manifests that express it. There is no platform runtime:
-nothing supervises the projects, nothing proxies their traffic, and no project
-imports anything from here.
+*What actually runs today, verified against the code in this repository.*
+For where this is going, see [target-architecture.md](target-architecture.md);
+for the difference between the two, [gap-analysis.md](gap-analysis.md).
+
+The platform is a Kubernetes cluster with an opinion about namespaces, plus a
+CLI that turns one YAML file per project into the manifests that express it.
+There is no platform runtime: nothing supervises the projects, nothing proxies
+their traffic at the application layer, and no project imports anything from
+`platform/`.
+
+## 1. Context
 
 ```mermaid
 flowchart LR
-    user([User]) -->|http://*.poc.localhost| ingress[ingress-nginx]
+    reviewer([Stakeholder / reviewer<br/>browser only]) -->|http://&lt;host&gt;.poc.localhost:8080| ingress
+    operator([Platform operator<br/>laptop]) -->|platformctl| api[(Kubernetes API)]
 
-    subgraph kyc_ns["namespace: poc-kyc-review-queue"]
+    subgraph cluster["Cluster — kind locally, AKS in Azure"]
+        ingress[ingress-nginx]
         kyc[kyc-review-queue]
-    end
-
-    subgraph flags_ns["namespace: poc-feature-flag-admin"]
         flags[feature-flag-admin]
-    end
-
-    subgraph refunds_ns["namespace: poc-refunds-dashboard"]
         refunds[refunds-dashboard]
+        ingress --> kyc
+        ingress --> flags
+        ingress --> refunds
     end
 
-    ingress --> kyc
-    ingress --> flags
-    ingress --> refunds
+    api -.->|helm upgrade --install| cluster
+    ext[/External systems:<br/>PSP, KYC vendor, SIEM, IdP/]
+    kyc -. "not connected" .-> ext
+    refunds -. "not connected" .-> ext
+    flags -. "not connected" .-> ext
 ```
 
-## The pieces
+Every external boundary is mocked or seeded. There is no identity provider, no
+payment processor, no screening vendor and no log sink.
 
-**One generic chart.** `charts/poc-app` renders a Deployment, a Service and an
-Ingress, and is deployed once per project. Nothing in it is project-specific;
-every difference is a value derived from `projects/<id>.yaml` by
-`platform_cli/render.py`. Adding project number four changes no chart, no CLI
-code and no platform manifest.
+## 2. Deployment view
 
-**One file per project.** `projects/<id>.yaml` is the whole configuration:
-image, hostname, and optionally port, health path, replicas and environment
-variables. Everything else has a default.
+```mermaid
+flowchart TB
+    user([Browser])
 
-**A namespace per project.** `poc-<id>`, created by `helm upgrade --install
---create-namespace`, so `platformctl delete <id>` takes the namespace and
-everything in it. Projects never share one.
+    subgraph ns_ingress["namespace: ingress-nginx"]
+        ctrl["ingress-nginx controller<br/>kind: hostPort 8080/8443 · AKS: internal LB"]
+    end
 
-**A hostname per project.** `<host>.<domain>`, routed by a single Ingress
-object. Nothing sits between the browser and the pod.
+    subgraph ns_kyc["namespace: poc-kyc-review-queue"]
+        direction TB
+        ikyc["Ingress kyc.poc.localhost"] --> skyc["Service :80"] --> pkyc["Deployment kyc-review-queue<br/>1 replica · uvicorn :8000 · SQLite in /data"]
+    end
 
-## What a project has to do
+    subgraph ns_flags["namespace: poc-feature-flag-admin"]
+        direction TB
+        iflags["Ingress flags.poc.localhost"] --> sflags["Service :80"] --> pflags["Deployment feature-flag-admin<br/>1 replica · uvicorn :8000 · SQLite in /data"]
+    end
 
-Listen on `$PORT`, answer `GET /healthz` while it is alive, and write only under
-`$DATA_DIR`. Those two variables are the entire runtime contract — the chart
-sets them, and a project that reads them runs identically under `docker run`, on
-kind and on AKS.
+    subgraph ns_refunds["namespace: poc-refunds-dashboard"]
+        direction TB
+        irefunds["Ingress refunds.poc.localhost"] --> srefunds["Service :80"] --> prefunds["Deployment refunds-dashboard<br/>1 replica · uvicorn :8000 · SQLite in /data"]
+    end
 
-## Local and AKS are the same deployment
+    user --> ctrl
+    ctrl --> ikyc
+    ctrl --> iflags
+    ctrl --> irefunds
+```
+
+One namespace, one Deployment, one Service and one Ingress per project — all
+rendered from the same chart. Nothing is shared between namespaces except the
+ingress controller and the nodes.
+
+## 3. How a project file becomes a running pod
+
+```mermaid
+flowchart LR
+    pf["projects/&lt;id&gt;.yaml<br/>id, image, host, env"] --> render
+    plat["platform.yaml<br/>domain, namespace_prefix,<br/>registry, ingress_class, public_port"] --> render
+    render["platform_cli/render.py<br/>app_values()"] --> values["Helm values<br/>name, image, host,<br/>port, healthPath, env"]
+    chart["charts/poc-app<br/>Deployment · Service · Ingress"] --> helm
+    values --> helm["helm upgrade --install &lt;id&gt;<br/>-n poc-&lt;id&gt; --create-namespace"]
+    helm --> k8s[(Kubernetes)]
+```
+
+`app_values()` is the entire translation layer between "what a team writes" and
+"what Kubernetes runs" — about 20 lines. Because every project goes through it
+and through the same chart, adding a project cannot change the *shape* of what
+gets deployed.
+
+## 4. Build and deploy, end to end
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Op as Operator
+    participant CLI as platformctl
+    participant Docker
+    participant Reg as kind / ACR
+    participant Helm
+    participant K8s as Kubernetes
+
+    Op->>CLI: bootstrap --target local|aks
+    CLI->>K8s: kind create cluster (local only)
+    CLI->>Helm: install ingress-nginx (values per target)
+    Op->>CLI: build [--load]
+    CLI->>Docker: docker build -t <image> ../<repo>
+    CLI->>Reg: kind load docker-image (local) / docker push (AKS, manual)
+    Op->>CLI: deploy [--wait]
+    CLI->>Helm: upgrade --install per project
+    Helm->>K8s: Deployment + Service + Ingress in poc-<id>
+    K8s-->>CLI: readiness probe GET /healthz
+    CLI-->>Op: URL per project
+```
+
+There is no CI, no image registry promotion and no GitOps: the path from a
+commit to a running image is a person typing two commands.
+
+## 5. The runtime contract
+
+Everything the chart tells a container:
+
+| Variable | Value | Meaning |
+| --- | --- | --- |
+| `PORT` | `8000` unless the project file overrides it | Listen here |
+| `DATA_DIR` | `/data` | The only path to write to |
+| `env:` from the project file | e.g. `APPROVAL_THRESHOLD_AMOUNT=200` | Whatever the app needs |
+
+Plus one HTTP obligation: answer `GET $health_path` (`/healthz` by default)
+while alive — that is the readiness probe, polled every 5s.
+
+That is all. A project that honours it runs identically under `docker run`, on
+kind and on AKS, and can leave the platform without changing a line.
+
+## 6. Local and AKS are the same deployment
 
 | | Local (kind) | AKS |
 | --- | --- | --- |
-| Cluster | `local/kind-cluster.yaml`, ports 8080/8443 published | `infra/aks/main.bicep`: 2 nodes, Azure CNI overlay, ACR |
-| Ingress | `bootstrap/ingress-nginx.local.yaml`, host ports | `bootstrap/ingress-nginx.aks.yaml`, internal Azure load balancer |
-| Images | built and `kind load`ed | built and pushed to ACR; the kubelet identity has `AcrPull` |
+| Cluster | `local/kind-cluster.yaml`: 1 node, host ports 8080/8443 | `infra/aks/main.bicep`: 2 × `Standard_D2s_v5`, Azure CNI overlay, RBAC on, system-assigned identity |
+| Registry | none — `kind load docker-image` | ACR (Basic), `AcrPull` granted to the kubelet identity |
+| Ingress | `bootstrap/ingress-nginx.local.yaml`: 1 replica, hostPort | `bootstrap/ingress-nginx.aks.yaml`: 2 replicas, **internal** Azure load balancer |
+| Domain | `poc.localhost` (browsers resolve `*.localhost` themselves) | whatever `platform.yaml` says; no DNS zone is created |
+| Public port | 8080 | 80 |
 
-Everything else — the chart, the project files, the namespaces and the
-hostnames — is identical. `platform.yaml` holds the handful of values that
-differ. The Bicep has not been run against a real subscription.
+The chart, the project files, the namespaces and the hostnames are identical;
+`platform.yaml` holds the handful of values that differ. **The Bicep has never
+been run against a real subscription** — the AKS path is written, not proven.
 
-## What this prototype is not
+## 7. What is inside a project (they are all the same shape)
 
-It demonstrates the deployment model and nothing else. Left out, deliberately:
+```mermaid
+flowchart LR
+    browser([Browser]) -->|"X-User: someone@example.com"| api
 
-| Missing | What the production version is |
+    subgraph app["One project container"]
+        api["FastAPI routes"] --> auth["auth.py<br/>X-User → Actor(email, role)"]
+        api --> domain["Domain rules<br/>thresholds, escalation, targeting"]
+        domain --> db[("SQLite in $DATA_DIR<br/>rows + its own audit table")]
+        static["static/ or web/dist<br/>hand-written HTML/JS"] --> api
+    end
+```
+
+| | Feature Flag Admin | KYC Review Queue | Refunds Dashboard |
+| --- | --- | --- | --- |
+| App code (Python) | 719 LOC | 416 LOC | 609 LOC |
+| Frontend | **none in this repo** — `/` returns 503 until `web/` is built | 333 LOC vanilla JS/HTML | 417 LOC vanilla JS/HTML |
+| Tests | 165 LOC | 102 LOC | 192 LOC |
+| Roles | `admin`, `viewer` | `analyst`, `senior_reviewer` | `support_agent`, `finance_approver` |
+| Domain rule that matters | %/team rollout, sticky by `sha256(flag:user_id) % 100` | escalated cases are senior-only | ≥ `APPROVAL_THRESHOLD_AMOUNT` needs finance |
+| Audit | own table, own schema | own table, own schema | own table, own schema |
+| Mocked boundary | flag reads are local | no screening or document store | payout is simulated |
+
+Three apps, three rosters, three role vocabularies, three audit schemas, three
+queue tables. Nothing above the runtime layer is shared — which is exactly the
+thing the target architecture proposes to fix.
+
+## 8. Identity today
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant App as Project container
+    B->>App: GET /api/refunds  (X-User: dana@example.com)
+    App->>App: USERS[email] → role, else 401
+    App-->>B: data filtered by role
+    Note over B,App: Nothing verifies the header. The "user switcher"<br/>in each UI is just a different header value.
+```
+
+Roles are real and enforced server-side; *who you are* is not. Any caller can
+claim any identity on the roster, and the roster is a dictionary in the app's
+own source.
+
+## 9. Testing
+
+| Suite | What it checks | Needs |
+| --- | --- | --- |
+| `platform/tests` (106 LOC) | project files → Helm values → rendered manifests, hostnames and namespaces unique | `helm` on `$PATH`, no cluster |
+| each app's `tests/` | API behaviour, role enforcement, domain rules | pytest only |
+
+Nothing tests the AKS path, the Bicep, or an actual cluster.
+
+## 10. What this prototype deliberately is not
+
+| Missing | What the production version would be |
 | --- | --- |
-| Authentication | oauth2-proxy or Entra ID at the ingress, asserting the caller to each app |
-| Isolation between projects | default-deny NetworkPolicies, Pod Security Admission, no service-account token |
-| Fair sharing | a ResourceQuota and LimitRange per namespace |
-| Durable state | a PersistentVolumeClaim instead of the pod's own filesystem |
-| Secrets | a secret store (Key Vault via CSI), not environment variables in a YAML file |
-| TLS | cert-manager and a real domain |
-| Governance | a policy check in CI over the project files, and admission control in the cluster |
+| Authentication | OIDC at the ingress (Entra/Okta via oauth2-proxy), the caller asserted to each app |
+| Isolation between projects | default-deny NetworkPolicy, Pod Security Admission, no service-account token, `readOnlyRootFilesystem` (the images run as UID 10001, but the chart sets no `securityContext`) |
+| Fair sharing | ResourceQuota and LimitRange per namespace — today only per-container requests/limits (50m/128Mi → 500m/512Mi) |
+| Durable state | a PersistentVolumeClaim; today `/data` is the pod's own writable layer, so **every restart is a fresh seeded database** |
+| Secrets | Key Vault via the CSI driver; today `env:` in a YAML file in git |
+| TLS | cert-manager and a real domain; today plain HTTP |
+| Delivery | CI, image scanning, signed images, GitOps; today `docker build` on a laptop |
+| Governance | admission control and a policy check over `projects/*.yaml`; today a project file is trusted as written |
+| Observability | metrics, logs and traces off-cluster; today `kubectl logs` |
 
-Each app still has roles (an analyst cannot see an escalated KYC case; only
-finance can approve a large refund), because that behaviour is the point of the
-apps. The acting user is whoever the browser says it is via an `X-User` header:
-enough to demonstrate the rules, and not authentication.
+Each app still has roles, because that behaviour is the point of the apps. The
+acting user is whoever the browser says it is.

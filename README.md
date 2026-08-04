@@ -33,12 +33,16 @@ and write only under `$DATA_DIR`.
 
 ## Start here
 
-- [Architecture](platform/docs/architecture.md) — what actually runs, how local
-  and AKS stay identical, and what the prototype deliberately leaves out.
-- [Business overview](platform/docs/business-view.md) — the same thing without
-  the Kubernetes vocabulary.
+- [Current architecture](platform/docs/architecture.md) — what actually runs,
+  how local and AKS stay identical, and what the prototype leaves out.
 - [Target architecture](platform/docs/target-architecture.md) — the in-house
-  platform this POC rehearses, mapped box by box against what is actually here.
+  platform this POC rehearses, and the decisions it assumes.
+- [Gap analysis](platform/docs/gap-analysis.md) — the two, box by box: what is
+  missing, how big it is, and which differences are decisions rather than work.
+- [Migration plan](platform/docs/migration-plan.md) — phased, with a genuine
+  stop point after the reuse thesis is measured.
+- [Business overview](platform/docs/business-view.md) — all of it without the
+  Kubernetes vocabulary.
 
 Nothing in this repository is production software: there is no authentication,
 all data is synthetic, and every external integration stops at a mocked
