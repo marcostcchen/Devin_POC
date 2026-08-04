@@ -1,8 +1,8 @@
-"""Loading and interpreting the platform's two kinds of configuration.
+"""Reading the platform's two kinds of configuration.
 
-`platform.yaml` describes the cluster and the mocked directory; each
-`projects/<id>.yaml` describes one deployable project. Nothing else is read: a
-project's own repository is only ever used to build its image.
+`platform.yaml` describes the cluster; each `projects/<id>.yaml` describes one
+deployable project. Nothing else is read: a project's own repository is only
+ever used to build its image.
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 PLATFORM_FILE = ROOT / "platform.yaml"
-POLICY_FILE = ROOT / "policy.yaml"
 PROJECTS_DIR = ROOT / "projects"
 CHARTS_DIR = ROOT / "charts"
 
@@ -34,69 +33,25 @@ class Platform:
         return cls(_read(path))
 
     @property
-    def _p(self) -> Dict[str, Any]:
-        return self.raw.get("platform", {})
-
-    @property
-    def name(self) -> str:
-        return self._p.get("name", "POC Platform")
-
-    @property
     def domain(self) -> str:
-        return self._p["domain"]
-
-    @property
-    def namespace_prefix(self) -> str:
-        return self._p.get("namespace_prefix", "poc-")
-
-    @property
-    def system_namespace(self) -> str:
-        return self._p.get("system_namespace", "poc-platform")
+        return self.raw["domain"]
 
     @property
     def registry(self) -> str:
-        return (self._p.get("registry") or "").rstrip("/")
+        return (self.raw.get("registry") or "").rstrip("/")
 
     @property
     def ingress_class(self) -> str:
-        return self._p.get("ingress_class", "nginx")
-
-    @property
-    def tls(self) -> Dict[str, Any]:
-        return self._p.get("tls", {}) or {}
-
-    @property
-    def public_port(self) -> int | None:
-        return self._p.get("public_port")
-
-    @property
-    def scheme(self) -> str:
-        return "https" if self.tls.get("enabled") else "http"
-
-    @property
-    def sizes(self) -> Dict[str, Any]:
-        return self.raw.get("sizes", {})
-
-    @property
-    def principals(self) -> List[Dict[str, Any]]:
-        return self.raw.get("principals", [])
+        return self.raw.get("ingress_class", "nginx")
 
     def namespace(self, project_id: str) -> str:
-        return f"{self.namespace_prefix}{project_id}"
+        return f"{self.raw.get('namespace_prefix', 'poc-')}{project_id}"
 
-    def host(self, subdomain: str) -> str:
-        return f"{subdomain}.{self.domain}"
-
-    def url(self, subdomain: str) -> str:
-        """The address a browser uses, including the port kind publishes on."""
-        port = self.public_port
-        default = 443 if self.scheme == "https" else 80
-        suffix = "" if port in (None, default) else f":{port}"
-        return f"{self.scheme}://{self.host(subdomain)}{suffix}"
-
-    def image(self, repository: str, tag: str) -> str:
-        prefix = f"{self.registry}/" if self.registry else ""
-        return f"{prefix}{repository}:{tag}"
+    def url(self, host: str) -> str:
+        """The address a browser uses, including the port the ingress is on."""
+        port = self.raw.get("public_port", 80)
+        suffix = "" if port == 80 else f":{port}"
+        return f"http://{host}.{self.domain}{suffix}"
 
 
 @dataclass(frozen=True)
@@ -108,9 +63,6 @@ class Project:
     def load(cls, path: Path) -> "Project":
         return cls(path, _read(path))
 
-    def section(self, name: str) -> Dict[str, Any]:
-        return self.raw.get(name, {}) or {}
-
     @property
     def id(self) -> str:
         return self.raw.get("id", self.path.stem)
@@ -120,24 +72,17 @@ class Project:
         return self.raw.get("name", self.id)
 
     @property
-    def stage(self) -> str:
-        return self.raw.get("stage", "")
+    def host(self) -> str:
+        return self.raw.get("host", self.id)
 
     @property
-    def subdomain(self) -> str:
-        return self.section("route").get("subdomain", self.id)
+    def image(self) -> str:
+        return self.raw["image"]
 
     @property
-    def repo_path(self) -> Path | None:
-        """Where the project's own repository is checked out, relative to here.
-
-        Only `platformctl build` uses it: a deployment needs the image, not the
-        source.
-        """
-        repo = self.raw.get("repo")
-        if not repo or "://" in repo:
-            return None
-        return (ROOT / repo).resolve()
+    def repo_path(self) -> Path:
+        """Where the project's own repository is, relative to this directory."""
+        return (ROOT / self.raw["repo"]).resolve()
 
 
 def load_projects(directory: Path = PROJECTS_DIR) -> List[Project]:

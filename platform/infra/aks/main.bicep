@@ -1,11 +1,10 @@
-// The whole platform, as one resource group: a small AKS cluster, a registry to
-// pull project images from, and the logs. Everything above this line is Helm.
+// The whole platform, as one resource group: a small AKS cluster and a registry
+// to pull project images from. Everything above this line is Helm.
 //
 //   az deployment group create -g <rg> -f main.bicep -p @parameters.json
 //
-// Deliberately minimal, and deliberately private: the ingress controller gets an
-// internal load balancer (see ../../bootstrap/ingress-nginx.aks.yaml), so the
-// projects are reachable from the corporate network only.
+// This is the prototype's cluster, not a production one: a single node pool, no
+// private networking and no hardening beyond the AKS defaults.
 
 @description('Prefix for every resource name; must be unique enough within the subscription.')
 param name string = 'pocplatform'
@@ -22,20 +21,8 @@ param nodeCount int = 2
 @description('Kubernetes version; leave empty to take the cluster default.')
 param kubernetesVersion string = ''
 
-@description('Entra ID group object IDs that get cluster-admin through Azure RBAC.')
-param adminGroupObjectIds array = []
-
 var clusterName = '${name}-aks'
 var registryName = toLower(replace('${name}acr', '-', ''))
-
-resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
-  name: '${name}-logs'
-  location: location
-  properties: {
-    sku: { name: 'PerGB2018' }
-    retentionInDays: 30
-  }
-}
 
 resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
   name: registryName
@@ -54,12 +41,6 @@ resource cluster 'Microsoft.ContainerService/managedClusters@2024-05-01' = {
     dnsPrefix: clusterName
     kubernetesVersion: empty(kubernetesVersion) ? null : kubernetesVersion
     enableRBAC: true
-    disableLocalAccounts: !empty(adminGroupObjectIds)
-    aadProfile: empty(adminGroupObjectIds) ? null : {
-      managed: true
-      enableAzureRBAC: true
-      adminGroupObjectIDs: adminGroupObjectIds
-    }
     agentPoolProfiles: [
       {
         name: 'system'
@@ -68,33 +49,15 @@ resource cluster 'Microsoft.ContainerService/managedClusters@2024-05-01' = {
         vmSize: nodeSize
         count: nodeCount
         enableAutoScaling: false
-        // Room for the ingress controller, the portal and the projects.
+        // Room for the ingress controller and the projects.
         maxPods: 60
       }
     ]
     networkProfile: {
       networkPlugin: 'azure'
       networkPluginMode: 'overlay'
-      // The platform's isolation model is NetworkPolicy; without this the
-      // per-project default-deny policies would be silently ignored.
-      networkPolicy: 'calico'
       loadBalancerSku: 'standard'
       outboundType: 'loadBalancer'
-    }
-    apiServerAccessProfile: {
-      enablePrivateCluster: false
-    }
-    addonProfiles: {
-      omsagent: {
-        enabled: true
-        config: { logAnalyticsWorkspaceResourceID: logs.id }
-      }
-      azurepolicy: {
-        enabled: true
-      }
-    }
-    autoUpgradeProfile: {
-      upgradeChannel: 'patch'
     }
   }
 }

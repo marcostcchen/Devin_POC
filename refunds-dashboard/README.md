@@ -6,8 +6,7 @@ the same stack as the other projects in this repository.
 
 > Rebuilt on FastAPI from the original React + Express prototype's README and
 > [`docs/API.md`](docs/API.md). The behaviour is the same; the payloads are now
-> `snake_case` and health lives at `/healthz`, as the
-> [project contract](../platform/docs/project-contract.md) requires.
+> `snake_case` and health lives at `/healthz`, which is what the platform polls.
 
 ## Run
 
@@ -29,11 +28,9 @@ seeded with 23 synthetic requests on first start; `rm refunds.db` to reset.
 ### On the POC platform
 
 Deployed by [`platform/projects/refunds-dashboard.yaml`](../platform/projects/refunds-dashboard.yaml)
-at its own hostname. The platform sets `AUTH_MODE=proxy-headers`, so the acting
-user comes from the `X-Auth-Request-*` headers the ingress injects and
-`AUTH_GROUP_ROLES` maps the caller's directory groups onto `support_agent` or
-`finance_approver`. Standalone, nothing changes here — the local roster and the
-`X-User` header come back. There is no platform code in this repository.
+at its own hostname. The platform sets `$PORT`, `$DATA_DIR` and
+`$APPROVAL_THRESHOLD_AMOUNT`; nothing else changes, and the app behaves exactly
+as it does standalone. There is no platform code in this repository.
 
 ## What it does
 
@@ -50,15 +47,16 @@ user comes from the `X-Auth-Request-*` headers the ingress injects and
   one gets a 403. The queue marks those rows *finance*.
 - **RBAC**: `support_agent` raises requests and decides small ones;
   `finance_approver` decides anything and is the only role that can pay out.
-  Switch identity with the "Acting as" dropdown; the standalone roster is
-  hardcoded in `USERS` in `app/auth.py`.
+  Switch identity with the "Acting as" dropdown; the roster is hardcoded in
+  `USERS` in `app/auth.py`.
 - **Audit trail**: every create, approve, deny and payout appends an event with
   actor, role, reason, the status transition and a timestamp — per request
   (`GET /api/refunds/{id}/audit`) and as a global feed (`GET /api/audit`).
 
-There is no real auth: standalone, the client sends the selected identity in an
-`X-User` header and the server trusts it; behind a proxy it trusts the proxy's
-`X-Auth-Request-*` headers instead. That is intentional for this POC.
+There is no authentication: the client sends the selected identity in an
+`X-User` header and the server trusts it. That is intentional for this POC — the
+threshold and the role rules are real and enforced server-side, but who you are
+is not.
 
 ## Seed data
 
@@ -77,9 +75,6 @@ the trail is not empty on a fresh install. No real customer, card or payment dat
 | `REFUNDS_DB_PATH`           | `$DATA_DIR/refunds.db` | SQLite file                                     |
 | `APPROVAL_THRESHOLD_AMOUNT` | `200`               | Amount at/above which finance sign-off is required |
 | `SEED_REQUEST_COUNT`        | `23`                | Synthetic requests generated on first start        |
-| `AUTH_MODE`                 | `local`             | `proxy-headers` when something authenticates in front |
-| `AUTH_DEFAULT_ROLE`         | `support_agent`     | Role for a caller holding none of the mapped groups |
-| `AUTH_GROUP_ROLES`          | empty               | `group:role,...`, most privileged first            |
 
 ## API
 

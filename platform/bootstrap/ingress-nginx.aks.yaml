@@ -1,7 +1,6 @@
 # ingress-nginx values for AKS: an internal Azure Load Balancer in front of two
 # controller replicas. The only difference from the local cluster is how traffic
-# reaches the controller; Ingress objects, hostnames and the auth subrequest to
-# the platform portal are the same.
+# reaches the controller; the Ingress objects and hostnames are the same.
 controller:
   replicaCount: 2
   service:
@@ -13,8 +12,4 @@ controller:
     name: nginx
     default: true
   config:
-    auth-keepalive: "0"
-    proxy-connect-timeout: "3"
     use-forwarded-headers: "true"
-  metrics:
-    enabled: true

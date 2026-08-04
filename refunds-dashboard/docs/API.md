@@ -4,25 +4,20 @@ Base URL: `http://localhost:8000` standalone, `https://refunds.<platform domain>
 on the POC platform. All responses are JSON; FastAPI errors are
 `{"detail": "..."}` (a list of field errors for a 422).
 
-## Identity headers (mocked — not authentication)
+## Identity header (mocked — not authentication)
 
-Which pair is read depends on `AUTH_MODE`; see the [project contract](../../platform/docs/project-contract.md).
+| Header   | Values                                      |
+| -------- | ------------------------------------------- |
+| `X-User` | an address from the roster in `app/auth.py` |
 
-| Header                   | Values                                          | Mode            |
-| ------------------------ | ----------------------------------------------- | --------------- |
-| `X-User`                 | an address from the local roster in `app/auth.py` | standalone      |
-| `X-Auth-Request-Email`   | the caller, asserted by the proxy               | `proxy-headers` |
-| `X-Auth-Request-User`    | display name                                    | `proxy-headers` |
-| `X-Auth-Request-Groups`  | comma-separated groups, mapped by `AUTH_GROUP_ROLES` | `proxy-headers` |
-
-An unknown user (standalone) or a request the proxy did not authenticate returns `401`.
+Omitting it acts as the default user; an address outside the roster returns `401`.
 
 ## Endpoints
 
 | Method | Route                        | Purpose                                                                          | Body / query                                                                                                                                            |
 | ------ | ---------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET`  | `/healthz`                   | Liveness/readiness probe                                                         | —                                                                                                                                                       |
-| `GET`  | `/api/me`                    | Acting identity, role, and the roster when nothing authenticates in front        | —                                                                                                                                                       |
+| `GET`  | `/api/me`                    | Acting identity, role, and the roster the switcher renders                       | —                                                                                                                                                       |
 | `GET`  | `/api/config`                | Threshold, statuses, reason codes and roles, so the UI does not duplicate them   | —                                                                                                                                                       |
 | `GET`  | `/api/refunds`               | List requests, filtered and sorted                                               | Query: `status` (`pending`\|`approved`\|`denied`\|`processed`\|`all`), `min_amount`, `max_amount`, `sort_by` (`created_at`\|`amount`\|`customer_name`\|`status`), `sort_direction` (`asc`\|`desc`) |
 | `POST` | `/api/refunds`               | Raise a request (either role)                                                    | `{ "customer_name": "Test Persona Zulu", "order_id": "ORD-2026-00042", "amount": 129.99, "reason_code": "damaged_item" }`                                |
@@ -40,7 +35,7 @@ An unknown user (standalone) or a request the proxy did not authenticate returns
 | `200` | Successful read                                                                                                         |
 | `201` | Request created, or a decision/payout recorded                                                                          |
 | `400` | Unknown `status` filter                                                                                                 |
-| `401` | Unknown user, or no identity asserted by the proxy                                                                      |
+| `401` | Unknown user                                                                                                            |
 | `403` | A support agent deciding at/above the threshold, or anyone but finance calling `/process`                               |
 | `404` | Unknown request id                                                                                                      |
 | `409` | Duplicate `order_id`, deciding a request that is not pending, or paying out one that is not approved                    |

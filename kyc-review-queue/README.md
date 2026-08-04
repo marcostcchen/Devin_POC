@@ -23,11 +23,9 @@ seeded with 18 synthetic cases on first start; `rm kyc.db` to reset.
 ### On the POC platform
 
 Deployed by [`platform/projects/kyc-review-queue.yaml`](../platform/projects/kyc-review-queue.yaml)
-at its own hostname. The platform sets `AUTH_MODE=proxy-headers`, so the acting
-reviewer comes from the `X-Auth-Request-*` headers the ingress injects and
-`AUTH_GROUP_ROLES` maps the caller's directory groups onto `analyst` or
-`senior_reviewer`. Standalone, nothing changes here — the local roster and the
-`X-User` header come back. There is no platform code in this repository.
+at its own hostname. The platform sets `$PORT` and `$DATA_DIR`; nothing else
+changes, and the app behaves exactly as it does standalone. There is no platform
+code in this repository.
 
 ## What it does
 
@@ -43,14 +41,14 @@ reviewer comes from the `X-Auth-Request-*` headers the ingress injects and
 - **RBAC**: `analyst` reviews and decides; `senior_reviewer` can additionally see
   escalated cases and override closed ones (the override is recorded as its own audit
   entry with `action=override`). Switch identity with the "Acting as" dropdown; the
-  standalone roster is hardcoded in `USERS` in `app/auth.py`.
+  roster is hardcoded in `USERS` in `app/auth.py`.
 - **Escalation path**: escalating moves the case to `escalated`, which drops it out of
   the analyst's queue and out of `GET /api/cases/{id}` for analysts (404), leaving it
   visible only to the senior reviewer — filter *Status: escalated* to work that queue.
 
-There is no real auth: standalone, the client sends the selected identity in an
-`X-User` header and the server trusts it; behind a proxy it trusts the proxy's
-`X-Auth-Request-*` headers instead. That is intentional for this POC.
+There is no authentication: the client sends the selected identity in an
+`X-User` header and the server trusts it. That is intentional for this POC — the
+roles are real and enforced server-side, but who you are is not.
 
 ## Seed data
 

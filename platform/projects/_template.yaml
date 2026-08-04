@@ -1,44 +1,25 @@
-# Copy this file to <your-project-id>.yaml, fill it in, then:
+# Copy this file to projects/<your-id>.yaml, fill it in, and run:
 #
-#   ./platformctl validate
-#   ./platformctl deploy <your-project-id>
+#   ./platformctl build <your-id> --load    # only on a local kind cluster
+#   ./platformctl deploy <your-id>
 #
-# This is the whole onboarding: no platform code changes, no chart changes.
-schema_version: 2
+# That is the whole onboarding. Nothing else on the platform changes.
 
-id: my-project                     # lowercase, also the namespace and release name
+id: my-project
 name: My Project
-summary: One sentence for the portal card.
-owner: Team or squad
-stage: poc                         # poc | prototype
-repo: ../my-project                # optional: path or URL, used by `platformctl build`
+summary: One sentence for whoever finds this file.
 
-image:
-  repository: poc/my-project       # prefixed with platform.registry when set
-  tag: "0.1.0"                     # must be pinned; latest/main/master are rejected
+# Where the project's own repository is, relative to this directory. Only
+# `platformctl build` uses it: deploying needs the image, not the source.
+repo: ../my-project
 
-runtime:
-  port: 8000                       # the port the container listens on ($PORT)
-  health_path: /healthz
-  replicas: 1
-  size: small                      # small | medium
-  env: {}                          # plain configuration only; credentials are rejected
+image: poc/my-project:0.1.0
 
-route:
-  subdomain: my-project            # https://<subdomain>.<platform domain>
+# Published at http://<host>.<the platform's domain>.
+host: my-project
 
-access:
-  roles: [viewer]                  # the roles the project implements
-  default_role: viewer             # what an unmapped user gets: least privilege
-  group_roles:                     # directory group -> project role
-    platform-admins: viewer
-
-data:
-  classification: synthetic        # synthetic | anonymized-sample
-  persistence: ephemeral           # ephemeral | <n>Gi
-
-capabilities:
-  - What it genuinely demonstrates
-
-limitations:
-  - What it fakes or leaves out
+# Optional; the defaults are shown.
+port: 8000
+health_path: /healthz
+replicas: 1
+env: {}

@@ -27,11 +27,9 @@ the port.
 ### On the POC platform
 
 Deployed by [`platform/projects/feature-flag-admin.yaml`](../platform/projects/feature-flag-admin.yaml)
-at its own hostname. The platform sets `AUTH_MODE=proxy-headers`, so the acting
-user comes from the `X-Auth-Request-*` headers the ingress injects and
-`AUTH_GROUP_ROLES` decides whether that user is an `admin` or a `viewer`.
-Standalone, nothing changes here — the local roster and the `X-User` header come
-back. There is no platform code in this repository.
+at its own hostname. The platform sets `$PORT` and `$DATA_DIR`; nothing else
+changes, and the app behaves exactly as it does standalone. There is no platform
+code in this repository.
 
 ## What it does
 
@@ -47,9 +45,9 @@ back. There is no platform code in this repository.
   reason. Bucketing is `sha256(flag:user_id) % 100`, so a user's assignment is sticky
   across evaluations and independent per flag. The *Evaluate* panel exercises this.
 
-There is no real auth: standalone, the client sends the selected identity in an
-`X-User` header and the server trusts it; behind a proxy it trusts the proxy's
-headers instead. That is intentional for this POC.
+There is no authentication: the client sends the selected identity in an
+`X-User` header and the server trusts it. That is intentional for this POC — the
+roles are real and enforced server-side, but who you are is not.
 
 ## The panel
 
@@ -65,8 +63,8 @@ The toolbar filters by name/description and by state, and reveals the create for
 ```
 app/
   main.py          FastAPI app: routers, error handling, serves web/dist
-  config.py        DB path, static paths, roles, group mapping, the local roster
-  auth.py          Actor resolution: proxy headers or the local roster, admin check
+  config.py        DB path, static paths, roles, the user roster
+  auth.py          Actor resolution from the roster, admin check
   models.py        Pydantic request/response schemas
   db.py            SQLite schema and connection handling
   repositories.py  All SQL for flags and audit entries

@@ -1,46 +1,7 @@
-# Everything the platform needs to run this project. The project's own
-# repository knows nothing about this file.
-schema_version: 2
-
 id: kyc-review-queue
 name: KYC Review Queue
 summary: Compliance case triage with decisions, required reasons and an audit trail.
-owner: Compliance Experiments
-stage: poc
 repo: ../kyc-review-queue
 
-image:
-  repository: poc/kyc-review-queue
-  tag: "0.1.0"
-
-runtime:
-  port: 8000
-  health_path: /healthz
-  replicas: 1
-  size: small
-
-route:
-  subdomain: kyc
-
-access:
-  roles: [analyst, senior_reviewer]
-  default_role: analyst
-  group_roles:
-    kyc-seniors: senior_reviewer
-    kyc-analysts: analyst
-
-data:
-  classification: synthetic
-  persistence: ephemeral
-
-capabilities:
-  - Case queue with risk and status filters, claim/approve/reject/escalate decisions
-  - Required reason on every decision, enforced server-side
-  - Escalated cases are hidden from analysts and only visible to senior reviewers
-  - Append-only decision history per case and a global audit view
-
-limitations:
-  - No screening vendor; risk levels come from the seed data
-  - No document storage; attachments are filenames
-  - Identity is asserted by the platform's mocked SSO, not proven
-  - SQLite in an ephemeral volume; the data is gone when the namespace is deleted
+image: poc/kyc-review-queue:0.1.0
+host: kyc
