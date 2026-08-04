@@ -1,4 +1,4 @@
-# Devin_POC
+# Internal_K8_Platform_POC
 
 Prototypes, and the Kubernetes platform that deploys them. Each prototype is an
 ordinary container in its own folder — it depends on its own stack and on
